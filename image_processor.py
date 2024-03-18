@@ -1,8 +1,8 @@
 import cv2 as cv
 import numpy as np
-from ultralytics import YOLO
+# from ultralytics import YOLO
 
-PLANT_PREDICTION_MODEL = YOLO('i900model8500.pt')
+# PLANT_PREDICTION_MODEL = YOLO('i900model8500.pt')
 DICTIONAIRY = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_100)
 PARAMS = cv.aruco.DetectorParameters()
 PARAMS.adaptiveThreshWinSizeMin = 141  # default 3
@@ -37,14 +37,6 @@ class ImageProcessor:
             [self.x_offset, self.height - self.y_offset],
             [self.width - self.x_offset, self.height - self.y_offset],
         ])
-        # for solar panels
-        # self.dst_mat = np.float32(
-        # [
-        #     [self.x_offset, self.y_offset],
-        #     [3000 - self.x_offset, self.y_offset],
-        #     [self.x_offset, 2000 - self.y_offset],
-        #     [3000 - self.x_offset, 2000 - self.y_offset],
-        # ])
         try:
             self.perspective_transform = self.get_perspective_transform(self.calibrate_img(img))
         except:
@@ -87,8 +79,7 @@ class ImageProcessor:
 
     def get_transformed_img (self, img):
         dst = self.calibrate_img(img)
-        new_frame = cv.warpPerspective(
-            dst, self.perspective_transform, (self.width, self.height))
+        new_frame = cv.warpPerspective(dst, self.perspective_transform, (self.width, self.height))
         return new_frame
     
     def adapt_and_calibrate_img (self, img):
@@ -100,12 +91,12 @@ class ImageProcessor:
     
     def get_plants (self, img):
         plants = []
-        results = PLANT_PREDICTION_MODEL.predict(img, conf=0.4,classes=0, verbose=False)
-        for xywh in results[0].boxes.xywh:
-            # append only x and y coords of the center
-            plants.append((int(xywh[0]), int(xywh[1])))
+        # results = PLANT_PREDICTION_MODEL.predict(img, conf=0.4,classes=0, verbose=False)
+        # for xywh in results[0].boxes.xywh:
+        #     # append only x and y coords of the center
+        #     plants.append((int(xywh[0]), int(xywh[1])))
                         
-        self.plants = plants
+        # self.plants = plants
         return plants
     
     def get_solar_panels (self, img):

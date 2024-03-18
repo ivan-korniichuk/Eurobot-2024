@@ -1,9 +1,11 @@
 class DataAnaliser:
-    def __init__(self, b_areas, y_areas, b_reserved_area, y_reserved_area):
-        self.b_areas = b_areas
-        self.y_areas = y_areas
-        self.b_reserved_area = b_reserved_area
-        self.y_reserved_area = y_reserved_area
+    def __init__(self, b_mid, y_mid, b_corner, y_corner, b_reserved, y_reserved):
+        self.b_mid = b_mid
+        self.y_mid = y_mid
+        self.b_corner = b_corner
+        self.y_corner = y_corner
+        self.b_reserved = b_reserved
+        self.y_reserved = y_reserved
         self.default_solar_pos = [0]*9
 
     def update (self, plants):
@@ -15,39 +17,63 @@ class DataAnaliser:
 
     def cluster_plants (self):
         non_assigned_plants = []
-        b_plants = []
-        y_plants = []
+        b_mid_plants = []
+        y_mid_plants = []
+        b_corner_plants = []
+        y_corner_plants = []
         b_reserved_plants = []
         y_reserved_plants = []
 
 
         for plant in self.plants:
 
-            for b_area in self.b_areas:
-                if self.is_in_range(plant, b_area):
-                    b_plants.append(plant)
-                    break
-            # else:
-            #     continue
+            # for b_area in self.b_areas:
+            #     if self.is_in_range(plant, b_area):
+            #         b_plants.append(plant)
+            #         break
+            # # else:
+            # #     continue
 
-            for y_area in self.y_areas:
-                if self.is_in_range(plant, y_area):
-                    y_plants.append(plant)
-                    break
-            # else:
-            #     continue
+            # for y_area in self.y_areas:
+            #     if self.is_in_range(plant, y_area):
+            #         y_plants.append(plant)
+            #         break
+            # # else:
+            # #     continue
+            if self.is_in_range(plant, self.b_mid):
+                b_mid_plants.append(plant)
+                continue
 
-            if self.is_in_range(plant, self.b_reserved_area):
+            if self.is_in_range(plant, self.y_mid):
+                y_mid_plants.append(plant)
+                continue
+
+            if self.is_in_range(plant, self.b_corner):
+                b_corner_plants.append(plant)
+                continue
+
+            if self.is_in_range(plant, self.y_corner):
+                y_corner_plants.append(plant)
+                continue
+
+            if self.is_in_range(plant, self.b_reserved):
                 b_reserved_plants.append(plant)
                 continue
 
-            if self.is_in_range(plant, self.y_reserved_area):
+            if self.is_in_range(plant, self.y_reserved):
                 y_reserved_plants.append(plant)
                 continue
 
             non_assigned_plants.append(plant)
 
-        return [non_assigned_plants, b_plants, y_plants, b_reserved_plants, y_reserved_plants]
+        return [
+            non_assigned_plants,
+            b_mid_plants,
+            y_mid_plants,
+            b_corner_plants,
+            y_corner_plants,
+            b_reserved_plants,
+            y_reserved_plants]
 
                 
                 

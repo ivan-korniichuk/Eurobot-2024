@@ -101,6 +101,12 @@ class ImageProcessor:
     def get_plants (self, img):
         plants = []
         results = PLANT_PREDICTION_MODEL.predict(img, conf=0.4,classes=0, verbose=False)
+        
+        # annotated_frame = results[0].plot()
+
+        # cv.imshow("YOLOv8 Inference", annotated_frame)
+        # cv.waitKey(500)
+
         for xywh in results[0].boxes.xywh:
             # append only x and y coords of the center
             plants.append((int(xywh[0]), int(xywh[1])))

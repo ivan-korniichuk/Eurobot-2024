@@ -3,7 +3,7 @@ import numpy as np
 from image_processor import ImageProcessor
 from visualiser import Visualiser
 import time
-from multiprocessing import Process
+# from multiprocessing import Process
 from data_analiser import DataAnaliser
 
 # for solar panels
@@ -17,12 +17,12 @@ CAMERA_MATRIX = np.array([[5000, 0, 970],
 
 RESERVED_AREA_B = [(0,0), (450,450)]
 RESERVED_AREA_Y = ((2550,0), (3000, 450))
-DROP_OFFS_Y = [[(2550,1550), (3000,2000)],[(0, 775), (450, 1225)]]
-DROP_OFFS_B = [[(0,1550), (450,2000)],[(2550, 775), (3000, 1225)]]
-# DROP_OFF_B_MID = [(2550, 775), (3000, 1225)]
-# DROP_OFF_B_COR = [(0,1550), (450,2000)]
-# DROP_OFF_Y_MID = [(0, 775), (450, 1225)]
-# DROP_OFF_Y_COR = [(2550,1550), (3000,2000)]
+# DROP_OFFS_Y = [[(2550,1550), (3000,2000)],[(0, 775), (450, 1225)]]
+# DROP_OFFS_B = [[(0,1550), (450,2000)],[(2550, 775), (3000, 1225)]]
+DROP_OFF_B_MID = [(2550, 775), (3000, 1225)]
+DROP_OFF_B_COR = [(0,1550), (450,2000)]
+DROP_OFF_Y_MID = [(0, 775), (450, 1225)]
+DROP_OFF_Y_COR = [(2550,1550), (3000,2000)]
 # SOLAR_PANELS_Y = [(), (), ()]
 # SOLAR_PANELS_B = [(), (), ()]
 # SOLAR_PANELS_G = [(), (), ()]
@@ -32,6 +32,7 @@ SIMA_AREA_B = [(1050, 0), (1500, 150)]
 cap = cv.VideoCapture(1)
 
 while True:
+    print("2")
     ret, frame = cap.read()
     if ret:
         image_processor = ImageProcessor(
@@ -45,8 +46,8 @@ while True:
             break
 
 print("calibrated")
-visualiser = Visualiser(RESERVED_AREA_B, RESERVED_AREA_Y, DROP_OFFS_B, DROP_OFFS_Y, SIMA_AREA_B, SIMA_AREA_Y)
-data_analiser = DataAnaliser(DROP_OFFS_B, DROP_OFFS_Y, RESERVED_AREA_B, RESERVED_AREA_Y)
+visualiser = Visualiser(DROP_OFF_B_MID, DROP_OFF_Y_MID, DROP_OFF_B_COR, DROP_OFF_Y_COR, RESERVED_AREA_B, RESERVED_AREA_Y, SIMA_AREA_B, SIMA_AREA_Y)
+data_analiser = DataAnaliser(DROP_OFF_B_MID, DROP_OFF_Y_MID, DROP_OFF_B_COR, DROP_OFF_Y_COR, RESERVED_AREA_B, RESERVED_AREA_Y)
 
 while True:
     ret, frame = cap.read()
@@ -73,3 +74,5 @@ while True:
     if cv.waitKey(1) == ord("q"):
         break
     
+cap.release()
+cv.destroyAllWindows()

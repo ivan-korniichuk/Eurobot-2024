@@ -21,11 +21,13 @@ BLACK = (0, 0, 0)
 # SIMA_AREA_B = [(1050, 0), (1500, 150)]
 
 class Visualiser:
-    def __init__(self, reserved_area_b, reserved_area_y, drop_offs_b, drop_offs_y, sima_area_b, sima_area_y):
-        self.reserved_area_b = reserved_area_b
-        self.reserved_area_y = reserved_area_y
-        self.drop_offs_b = drop_offs_b
-        self.drop_offs_y = drop_offs_y
+    def __init__(self, b_mid, y_mid, b_corner, y_corner, b_reserved, y_reserved, sima_area_b, sima_area_y):
+        self.reserved_area_b = b_reserved
+        self.reserved_area_y = y_reserved
+        self.mid_dropoff_b = b_mid
+        self.mid_dropoff_y = y_mid
+        self.corner_dropoff_b = b_corner
+        self.corner_dropoff_y = y_corner
         self.sima_area_b = sima_area_b
         self.sima_area_y = sima_area_y
 
@@ -34,25 +36,30 @@ class Visualiser:
         cv.circle(
             self.view,
             center=(x, y),
-            radius= 50,
+            radius= 70,
             color=color,
             thickness=5,
         )
 
-    # delete, move to data_analyser
-    def draw_rectangles (self, rectangles, color, thickness = 5):
-        for area in rectangles:
-            cv.rectangle(self.view, area[0], area[1], color, thickness)
+    # # delete, move to data_analyser
+    # def draw_rectangles (self, rectangles, color, thickness = 5):
+    #     for area in rectangles:
+    #         cv.rectangle(self.view, area[0], area[1], color, thickness)
     def draw_rectangle (self, rectangle, color, thickness = 5):
         cv.rectangle(self.view, rectangle[0], rectangle[1], color, thickness)
     
     def map_areas (self):
         self.draw_rectangle(self.reserved_area_y, YELLOW)
         self.draw_rectangle(self.reserved_area_b, BLUE)
-        # BLUE DROP OFFS
-        self.draw_rectangles(self.drop_offs_b, BLUE)
-        # Y DROP OFFS
-        self.draw_rectangles(self.drop_offs_y, YELLOW)
+
+        self.draw_rectangle(self.mid_dropoff_b, BLUE)
+        self.draw_rectangle(self.mid_dropoff_y, YELLOW)
+        self.draw_rectangle(self.corner_dropoff_b, BLUE)
+        self.draw_rectangle(self.corner_dropoff_y, YELLOW)
+        # # BLUE DROP OFFS
+        # self.draw_rectangles(self.drop_offs_b, BLUE)
+        # # Y DROP OFFS
+        # self.draw_rectangles(self.drop_offs_y, YELLOW)
         self.draw_rectangle(self.sima_area_b, BLUE)
         self.draw_rectangle(self.sima_area_y, YELLOW)
 
@@ -60,13 +67,17 @@ class Visualiser:
     def update(self, img, plants):
         self.view = img
         if plants:
-            non_assigned_plants, b_plants, y_plants, b_reserved_plants, y_reserved_plants = plants
+            non_assigned_plants, b_mid_plants, y_mid_plants, b_corner_plants, y_corner_plants, b_reserved_plants, y_reserved_plants = plants
             self.map_areas()
             for plant in non_assigned_plants:
                 self.draw_plant(plant, BLACK)
-            for plant in b_plants:
+            for plant in b_mid_plants:
                 self.draw_plant(plant, BLUE)
-            for plant in y_plants:
+            for plant in y_mid_plants:
+                self.draw_plant(plant, YELLOW)
+            for plant in b_corner_plants:
+                self.draw_plant(plant, BLUE)
+            for plant in y_corner_plants:
                 self.draw_plant(plant, YELLOW)
             for plant in b_reserved_plants:
                 self.draw_plant(plant, RED)

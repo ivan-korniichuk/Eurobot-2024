@@ -1,7 +1,9 @@
+from threading import Thread
+
 import cv2 as cv
 import numpy as np
 
-from camera import Camera
+from camera import Camera, main
 from image_processor_new import ImageProcessor
 from plants_detector3 import PlantsDetector
 from visualiser import Visualiser
@@ -28,20 +30,18 @@ DROP_OFF_Y_COR = [(2550, 1550), (3000, 2000)]
 SIMA_AREA_Y = [(1500, 0), (1950, 150)]
 SIMA_AREA_B = [(1050, 0), (1500, 150)]
 
-cap = cv.VideoCapture(1)
+camera_thread = Thread(target=main)
+camera_thread.start()
 while True:
-    print("2")
-    ret, frame = cap.read()
-    if ret:
-        image_processor = ImageProcessor(
-            frame,
-            WIDTH_HEIGHT,
-            OFFSET,
-            CAMERA_MATRIX,
-            DIST_COEFFS
-        )
-        if image_processor.perspective_transform is not None:
-            break
+    image_processor = ImageProcessor(
+        Camera.frame,
+        WIDTH_HEIGHT,
+        OFFSET,
+        CAMERA_MATRIX,
+        DIST_COEFFS
+    )
+    if image_processor.perspective_transform is not None:
+        break
 
 print("calibrated")
 visualiser = Visualiser(DROP_OFF_B_MID, DROP_OFF_Y_MID, DROP_OFF_B_COR, DROP_OFF_Y_COR, RESERVED_AREA_B,

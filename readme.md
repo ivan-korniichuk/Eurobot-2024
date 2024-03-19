@@ -4,3 +4,7 @@
 
 # cpp AI
 - ONNX and ONNX CUDA: https://onnxruntime.ai/docs/get-started/with-cpp.html
+
+# AI model
+- i900model8500.pt
+- pt 2 ONNX

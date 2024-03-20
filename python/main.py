@@ -6,13 +6,15 @@ import time
 from multiprocessing import Process
 from data_analiser import DataAnaliser
 
+
+
 # for solar panels
 CAMERA_MATRIX = np.array([[5000, 0, 970],
                           [0, 5000, 550],
                           [0, 0, 1]])
 DIST_COEFFS = np.array([-3.4, -0.2, 0.015, 0, 0.05])
 
-F = 2
+F = 4
 WIDTH_HEIGHT = (300*F, 200*F)
 OFFSET = (75*F, 50*F)
 RESERVED_AREA_B = [(0,0), (45*F,45*F)]
@@ -23,6 +25,8 @@ SIMA_AREA_Y = [(150*F, 0), (195*F, 150*F)]
 SIMA_AREA_B = [(105*F, 0), (150*F, 150*F)]
 
 cap = cv.VideoCapture(1)
+cap.set(cv.CAP_PROP_FRAME_WIDTH, 1920)
+cap.set(cv.CAP_PROP_FRAME_HEIGHT, 1080)
 
 while True:
     ret, frame = cap.read()

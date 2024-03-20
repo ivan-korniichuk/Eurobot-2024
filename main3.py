@@ -1,14 +1,14 @@
 from threading import Thread
-
 import cv2 as cv
 import numpy as np
 
 from camera import Camera, main
-from image_processor_new import ImageProcessor
+# from image_processor import ImageProcessor
 from plants_detector3 import PlantsDetector
 from visualiser import Visualiser
 import time
 from data_analiser import DataAnaliser
+
 
 WIDTH_HEIGHT = (3000, 2000)
 OFFSET = (750, 500)
@@ -32,48 +32,34 @@ SIMA_AREA_B = [(1050, 0), (1500, 150)]
 
 camera_thread = Thread(target=main)
 camera_thread.start()
-while True:
-    image_processor = ImageProcessor(
-        Camera.frame,
-        WIDTH_HEIGHT,
-        OFFSET,
-        CAMERA_MATRIX,
-        DIST_COEFFS
-    )
-    if image_processor.perspective_transform is not None:
-        break
+
+while Camera.frame is None:
+    print("frame is none")
 
 print("calibrated")
 visualiser = Visualiser(DROP_OFF_B_MID, DROP_OFF_Y_MID, DROP_OFF_B_COR, DROP_OFF_Y_COR, RESERVED_AREA_B,
                         RESERVED_AREA_Y, SIMA_AREA_B, SIMA_AREA_Y)
 data_analiser = DataAnaliser(DROP_OFF_B_MID, DROP_OFF_Y_MID, DROP_OFF_B_COR, DROP_OFF_Y_COR, RESERVED_AREA_B,
                              RESERVED_AREA_Y)
-
+plant_thread = Thread(target=PlantsDetector.get_plant_detector)
+plant_thread.start()
 while True:
-    times_1 = time.time_ns()
+    # times_1 = time.time_ns()
 
-    img = image_processor.get_transformed_img(Camera.frame)
+    # img = image_processor.get_transformed_img(Camera.frame)
     # this one takes 0.1 sec but adapts to camera changes
-    # img = image_processor.adapt_and_calibrate_img(frame)
-    times_2 = time.time_ns()
-    # plants = plants_detector.get_plants(img)
-    # plants_detector.detect_objects(img)
-    #
-    # plants = p.map(get_plants,[img])
-    print("33333")
-    # plants = image_processor.get_plants(img)
-    times_3 = time.time_ns()
-    time1 = times_2 - times_1
-    time2 = times_3 - times_2
+    # img = image_processor.adapt_and_calibrate_img(Camera.frame)
+    img = Camera.frame
+    times_1 = time.time_ns()
     data_analiser.update(PlantsDetector.plants)
     plants = data_analiser.cluster_plants()
-    print("model time")
-    print(time2)
-    print("img time")
-    print(time1)
+    times_2 = time.time_ns()
+    time2 = times_2 - times_1
+    print("updating plants time:", time2, "\n")
     visualiser.update(img, plants)
-    if ret:
-        cv.imshow("frame", visualiser.view)
+    cv.imshow("frame", visualiser.view)
 
     if cv.waitKey(1) == ord("q"):
+        plant_thread.kill()
+        camera_thread.kill()
         break

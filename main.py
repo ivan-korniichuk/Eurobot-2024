@@ -30,6 +30,8 @@ SIMA_AREA_Y = [(1500, 0), (1950, 150)]
 SIMA_AREA_B = [(1050, 0), (1500, 150)]
 
 cap = cv.VideoCapture(1)
+cap.set(cv.CAP_PROP_FRAME_WIDTH, 1920)
+cap.set(cv.CAP_PROP_FRAME_HEIGHT, 1080)
 
 while True:
     print("2")
@@ -63,13 +65,11 @@ while True:
     time2 = times_3 - times_2
     data_analiser.update(plants)
     plants = data_analiser.cluster_plants()
-    print("model time")
-    print(time2)
-    print("img time")
-    print(time1)
+    print("model time: ", time2/1000000, "    img time: ", time1/1000000)
     visualiser.update(img, plants)
     if ret:
-        cv.imshow("frame", visualiser.view)
+        half = cv.resize(visualiser.view, (1280, 720))
+        cv.imshow("frame", half)
 
     if cv.waitKey(1) == ord("q"):
         break

@@ -1,8 +1,14 @@
+# issue: https://github.com/ultralytics/ultralytics/issues/5059
+# solution: down grade to python3.10
+# my plan: down to python3.8
 import cv2 as cv
 import numpy as np
 from ultralytics import YOLO
+import torch
 
+torch.cuda.set_device(0)
 PLANT_PREDICTION_MODEL = YOLO('i900model8500.pt')
+PLANT_PREDICTION_MODEL.to('cuda') # To Nvidia GPU / CUDA Version 11.8
 DICTIONAIRY = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_100)
 PARAMS = cv.aruco.DetectorParameters()
 PARAMS.adaptiveThreshWinSizeMin = 141  # default 3
@@ -100,7 +106,7 @@ class ImageProcessor:
     
     def get_plants (self, img):
         plants = []
-        results = PLANT_PREDICTION_MODEL.predict(img, conf=0.4,classes=0, verbose=False)
+        results = PLANT_PREDICTION_MODEL.predict(img, conf=0.4,classes=0, verbose=False, device=1)
         
         # annotated_frame = results[0].plot()
 

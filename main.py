@@ -33,17 +33,20 @@ cap = cv.VideoCapture(1)
 cap.set(cv.CAP_PROP_FRAME_WIDTH, 1920)
 cap.set(cv.CAP_PROP_FRAME_HEIGHT, 1080)
 
+image_processor = ImageProcessor(
+    WIDTH_HEIGHT,
+    OFFSET,
+    CAMERA_MATRIX,
+    DIST_COEFFS,
+    1920,
+    1080
+)
+
 while True:
-    print("2")
     ret, frame = cap.read()
     if ret:
-        image_processor = ImageProcessor(
-            frame, 
-            WIDTH_HEIGHT,
-            OFFSET,
-            CAMERA_MATRIX,
-            DIST_COEFFS
-        )
+        #cv.imshow("img", frame)
+        image_processor.cal(frame)
         if image_processor.perspective_transform is not None:
             break
 

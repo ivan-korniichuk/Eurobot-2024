@@ -7,8 +7,7 @@ from ultralytics import YOLO
 import torch
 
 torch.cuda.set_device(0)
-PLANT_PREDICTION_MODEL = YOLO('i900model8500.pt')
-PLANT_PREDICTION_MODEL.to('cuda') # To Nvidia GPU / CUDA Version 11.8
+
 DICTIONAIRY = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_100)
 PARAMS = cv.aruco.DetectorParameters()
 PARAMS.adaptiveThreshWinSizeMin = 141  # default 3
@@ -22,7 +21,9 @@ PARAMS_2 = cv.aruco.DetectorParameters()
 SOLAR_DETECTOR = cv.aruco.ArucoDetector(DICTIONAIRY, PARAMS_2)
 
 class ImageProcessor:
-    def __init__(self, img, width_height, offset, matrix, dist_coeffs):
+    def __init__(self, width_height, offset, matrix, dist_coeffs, w, h):
+        self.PLANT_PREDICTION_MODEL = YOLO('i900model8500.pt')
+        self.PLANT_PREDICTION_MODEL.to('cuda') # To Nvidia GPU / CUDA Version 11.8
 
         self.width, self.height = width_height
         self.x_offset, self.y_offset = offset
@@ -32,7 +33,7 @@ class ImageProcessor:
         self.matrix = matrix
         self.dist_coeffs = dist_coeffs
 
-        h,  w = img.shape[:2]
+        
         self.newcameramtx, _ = cv.getOptimalNewCameraMatrix(self.matrix, self.dist_coeffs, (w,h), 0, (w,h))
 
         self.differences = [0]*3
@@ -51,10 +52,15 @@ class ImageProcessor:
         #     [self.x_offset, 2000 - self.y_offset],
         #     [3000 - self.x_offset, 2000 - self.y_offset],
         # ])
+
+
+    def cal(self, img):
+        h,  w = img.shape[:2]
         try:
-            self.perspective_transform = self.get_perspective_transform(self.calibrate_img(img))
+            self.perspective_transform = self.get_perspective_transform(self.calibrate_img(img)) 
         except:
             print("no aruco grid found")
+
 
     def get_perspective_transform(self, frame):
         grid = [0] * 4
@@ -106,7 +112,7 @@ class ImageProcessor:
     
     def get_plants (self, img):
         plants = []
-        results = PLANT_PREDICTION_MODEL.predict(img, conf=0.4,classes=0, verbose=False, device=1)
+        results = self.PLANT_PREDICTION_MODEL.predict(img, conf=0.4,classes=0, verbose=False, device='cuda')
         
         # annotated_frame = results[0].plot()
 

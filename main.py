@@ -44,9 +44,12 @@ image_processor = ImageProcessor(
 
 while True:
     ret, frame = cap.read()
+    # upload resized frame to GPU
+    gpu_frame = cv.cuda_GpuMat()
+    gpu_frame.upload(frame)
     if ret:
         #cv.imshow("img", frame)
-        image_processor.cal(frame)
+        image_processor.cal(gpu_frame)
         if image_processor.perspective_transform is not None:
             break
 
@@ -59,7 +62,9 @@ while True:
     times_1 = time.time_ns()
     # img = image_processor.get_transformed_img(frame)
     # this one takes 0.1 sec but adapts to camera changes
-    img = image_processor.adapt_and_calibrate_img(frame)
+    gpu_frame = cv.cuda_GpuMat()
+    gpu_frame.upload(frame)
+    img = image_processor.adapt_and_calibrate_img(gpu_frame)
     times_2 = time.time_ns()
     plants = image_processor.get_plants(img)
     # plants = image_processor.get_plants(img)

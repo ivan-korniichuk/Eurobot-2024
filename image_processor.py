@@ -104,10 +104,10 @@ class ImageProcessor:
         return new_frame
     
     def adapt_and_calibrate_img (self, img):
-        try:
-            self.perspective_transform = self.get_perspective_transform(self.calibrate_img(img))
-        except:
-            print("no aruco grid found")
+        # try:
+        #     self.perspective_transform = self.get_perspective_transform(self.calibrate_img(img))
+        # except:
+        #     print("no aruco grid found")
         return self.get_transformed_img(img)
     
     def get_plants (self, img):

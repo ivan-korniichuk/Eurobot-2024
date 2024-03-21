@@ -1,5 +1,6 @@
 import socketserver
 import socket
+import sys
 
 
 class UDPServerHandler(socketserver.BaseRequestHandler):
@@ -19,6 +20,7 @@ def get_ip():
 
 def main():
     with socketserver.UDPServer((get_ip(), 9999), UDPServerHandler) as server:
+        print("server listening on", get_ip(), "with port 9999")
         server.serve_forever()
 
 

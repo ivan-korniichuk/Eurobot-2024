@@ -1,4 +1,5 @@
 import socketserver
+import socket
 
 
 class UDPServerHandler(socketserver.BaseRequestHandler):
@@ -11,8 +12,13 @@ class UDPServerHandler(socketserver.BaseRequestHandler):
         # TODO: Call function in main bot code
 
 
+def get_ip():
+    a = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    a.connect(("1.1.1.1", 1))
+    return a.getsockname()[0]
+
 def main():
-    with socketserver.UDPServer(("127.0.0.1", 9999), UDPServerHandler) as server:
+    with socketserver.UDPServer((get_ip(), 9999), UDPServerHandler) as server:
         server.serve_forever()
 
 

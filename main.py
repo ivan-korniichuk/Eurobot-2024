@@ -1,6 +1,6 @@
 import cv2 as cv
 import numpy as np
-from image_processor_new import ImageProcessor
+from image_processor import ImageProcessor
 
 from multiprocessing.connection import Client
 import subprocess
@@ -9,10 +9,18 @@ from visualiser import Visualiser
 import time
 from data_analiser import DataAnaliser
 
-if __name__ == "__main__":
+# 
+# import main_robot_navigation.main_path_finder as main_path
+from main_robot_navigation.main_robot_navigation import MainNavigation
+# 
 
-    WIDTH_HEIGHT = (3000, 2000)
-    OFFSET = (750, 500)
+if __name__ == "__main__":
+    TEAM_IS_BLUE = True
+    # TEAM_IS_BLUE = 
+    # WIDTH_HEIGHT = (3000, 2000)
+    WIDTH_HEIGHT = (3500, 2500)
+    MARKER_OFFSET = (750, 500)
+    OFFSET = (250, 0, 250, 500)
     DIST_COEFFS = np.array([-3.4, -0.2, 0.015, 0, 0.05])
     CAMERA_MATRIX = np.array([[5000, 0, 970],
                             [0, 5000, 550],
@@ -31,9 +39,10 @@ if __name__ == "__main__":
     SIMA_AREA_Y = [(1500, 0), (1950, 150)]
     SIMA_AREA_B = [(1050, 0), (1500, 150)]
 
-    visualiser = Visualiser(DROP_OFF_B_MID, DROP_OFF_Y_MID, DROP_OFF_B_COR, DROP_OFF_Y_COR, RESERVED_AREA_B,
+    # add offset to these two
+    visualiser = Visualiser(OFFSET, DROP_OFF_B_MID, DROP_OFF_Y_MID, DROP_OFF_B_COR, DROP_OFF_Y_COR, RESERVED_AREA_B,
                             RESERVED_AREA_Y, SIMA_AREA_B, SIMA_AREA_Y)
-    data_analiser = DataAnaliser(DROP_OFF_B_MID, DROP_OFF_Y_MID, DROP_OFF_B_COR, DROP_OFF_Y_COR, RESERVED_AREA_B,
+    data_analiser = DataAnaliser(OFFSET, DROP_OFF_B_MID, DROP_OFF_Y_MID, DROP_OFF_B_COR, DROP_OFF_Y_COR, RESERVED_AREA_B,
                                 RESERVED_AREA_Y)
 
     cap = cv.VideoCapture(1)
@@ -43,6 +52,7 @@ if __name__ == "__main__":
             image_processor = ImageProcessor(
                 frame, 
                 WIDTH_HEIGHT,
+                MARKER_OFFSET,
                 OFFSET,
                 CAMERA_MATRIX,
                 DIST_COEFFS
@@ -62,6 +72,9 @@ if __name__ == "__main__":
     cv.namedWindow("frame1", cv.WINDOW_NORMAL)   # Create window with freedom of dimensions
     # 
 
+    # 
+    main_navigation = MainNavigation(True, 25)
+    # 
     for attempt in range(retries):
         try:
             with Client(address, authkey=b'secret password') as conn:
@@ -72,6 +85,7 @@ if __name__ == "__main__":
                     time2 = time.time_ns()
                     # img = image_processor.get_transformed_img(frame)
                     img = image_processor.adapt_and_calibrate_img(frame)
+                    # start navigation here
                     img2 = img.copy()
                     time3 = time.time_ns()
                     plants = conn.recv()
@@ -79,6 +93,7 @@ if __name__ == "__main__":
                     data_analiser.update(plants)
                     plants = data_analiser.cluster_plants()
                     visualiser.update(img2, plants)
+                    
                     time5 = time.time_ns()
                     print("send time")
                     print(time2 - time1)
@@ -88,6 +103,7 @@ if __name__ == "__main__":
                     print(time3 - time2)
                     print("visualiser processing")
                     print(time5-time4)
+                    main_navigation.navigate(img, (2775,1775))
                     # 
                     # cv.resizeWindow("frame1", 600,400)
                     # 

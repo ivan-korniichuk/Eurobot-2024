@@ -10,26 +10,23 @@ RED = (0, 0, 255)
 PURPLE = (230, 20, 160)
 BLACK = (0, 0, 0)
 
-# RESERVED_AREA_B = [(0,0), (450,450)]
-# RESERVED_AREA_Y = ((3000,2000), (2550, 1550))
-# DROP_OFFS_Y = [[(2550,0), (3000,450)],[(0, 775), (450, 1225)]]
-# DROP_OFFS_B = [[(0,1550), (450,2000)],[(2550, 775), (3000, 1225)]]
-# SOLAR_PANELS_Y = [(), (), ()]
-# SOLAR_PANELS_B = [(), (), ()]
-# SOLAR_PANELS_G = [(), (), ()]
-# SIMA_AREA_Y = [(1500, 0), (1950, 150)]
-# SIMA_AREA_B = [(1050, 0), (1500, 150)]
-
 class Visualiser:
-    def __init__(self, b_mid, y_mid, b_corner, y_corner, b_reserved, y_reserved, sima_area_b, sima_area_y):
-        self.reserved_area_b = b_reserved
-        self.reserved_area_y = y_reserved
-        self.mid_dropoff_b = b_mid
-        self.mid_dropoff_y = y_mid
-        self.corner_dropoff_b = b_corner
-        self.corner_dropoff_y = y_corner
-        self.sima_area_b = sima_area_b
-        self.sima_area_y = sima_area_y
+    def __init__(self, offset, b_mid, y_mid, b_corner, y_corner, b_reserved, y_reserved, sima_area_b, sima_area_y):
+        self.offset_x, self.offset_y, _, _ = offset
+        self.reserved_area_b = self.apply_offset(b_reserved)
+        self.reserved_area_y = self.apply_offset(y_reserved)
+        self.mid_dropoff_b = self.apply_offset(b_mid)
+        self.mid_dropoff_y = self.apply_offset(y_mid)
+        self.corner_dropoff_b = self.apply_offset(b_corner)
+        self.corner_dropoff_y = self.apply_offset(y_corner)
+        self.sima_area_b = self.apply_offset(sima_area_b)
+        self.sima_area_y = self.apply_offset(sima_area_y)
+
+    def apply_offset(self, corners):
+        updated_corners = []
+        for corner in corners:
+            updated_corners.append((corner[0] + self.offset_x, corner[1] + self.offset_y))
+        return updated_corners
 
     def draw_plant(self, plant, color = GRAY):
         x, y = plant

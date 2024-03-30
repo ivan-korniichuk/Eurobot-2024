@@ -1,25 +1,30 @@
 import cv2 as cv
 import numpy as np
-from ultralytics import YOLO
 
-PLANT_PREDICTION_MODEL = YOLO('i900model8500.pt')
 DICTIONAIRY = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_100)
 PARAMS = cv.aruco.DetectorParameters()
-PARAMS.adaptiveThreshWinSizeMin = 141  # default 3
-PARAMS.adaptiveThreshWinSizeMax = 251  # default 23
-PARAMS.adaptiveThreshWinSizeStep = 20  # default 10
-PARAMS.adaptiveThreshConstant = 4      # default 7
-PARAMS.cornerRefinementMethod = cv.aruco.CORNER_REFINE_CONTOUR
+# PARAMS.adaptiveThreshWinSizeMin = 141  # default 3
+# PARAMS.adaptiveThreshWinSizeMax = 251  # default 23
+# PARAMS.adaptiveThreshWinSizeStep = 20  # default 10
+# PARAMS.adaptiveThreshConstant = 4      # default 7
+# PARAMS.cornerRefinementMethod = cv.aruco.CORNER_REFINE_CONTOUR
+# 
+# PARAMS.adaptiveThreshWinSizeMin = 3
+# PARAMS.adaptiveThreshWinSizeMax = 23
+# PARAMS.adaptiveThreshWinSizeStep = 10
 MAIN_DETECTOR = cv.aruco.ArucoDetector(DICTIONAIRY, PARAMS)
 
 PARAMS_2 = cv.aruco.DetectorParameters()
+# PARAMS_2.minMarkerPerimeterRate = 0.05
+# PARAMS_2.markerBorderBits = 1
 SOLAR_DETECTOR = cv.aruco.ArucoDetector(DICTIONAIRY, PARAMS_2)
 
 class ImageProcessor:
-    def __init__(self, img, width_height, offset, matrix, dist_coeffs):
+    def __init__(self, img, width_height, marker_offset, offset, matrix, dist_coeffs):
 
         self.width, self.height = width_height
-        self.x_offset, self.y_offset = offset
+        self.x_marker_offset, self.y_marker_offset = marker_offset
+        self.x1_offset, self.y1_offset, self.x2_offset, self.y2_offset = offset
         self.bot = None
         self.plants = []
         self.perspective_transform = None
@@ -32,10 +37,10 @@ class ImageProcessor:
         self.differences = [0]*3
         self.dst_mat = np.float32(
         [
-            [self.x_offset, self.y_offset],
-            [self.width - self.x_offset, self.y_offset],
-            [self.x_offset, self.height - self.y_offset],
-            [self.width - self.x_offset, self.height - self.y_offset],
+            [(self.x_marker_offset + self.x1_offset), (self.y_marker_offset + self.y1_offset)],
+            [self.width - (self.x_marker_offset + self.x1_offset), (self.y_marker_offset + self.y1_offset)],
+            [(self.x_marker_offset + self.x2_offset), self.height - (self.y_marker_offset + self.y2_offset)],
+            [self.width - (self.x_marker_offset + self.x2_offset), self.height - (self.y_marker_offset + self.y2_offset)],
         ])
         # for solar panels
         # self.dst_mat = np.float32(
@@ -52,7 +57,9 @@ class ImageProcessor:
 
     def get_perspective_transform(self, frame):
         grid = [0] * 4
-
+        # gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+        # blurred = cv.GaussianBlur(gray, (5, 5), 0)
+        # contrast_enhanced = cv.equalizeHist(blurred)
         corners, ids, _ = MAIN_DETECTOR.detectMarkers(frame)
         if len(corners) != 0:
             for (corner, id) in zip(corners, ids):
@@ -77,10 +84,10 @@ class ImageProcessor:
             if grid[i-1] == 0:
                 if self.differences[i] != 0 and grid[i] != 0:
                     grid[i-1] = (grid[i][0] - self.differences[i-1][0], grid[i][1] - self.differences[i-1][1])
-        
+
         img_mat = np.float32(grid)
         return cv.getPerspectiveTransform(img_mat, self.dst_mat)
-    
+
     def calibrate_img (self, img):
         dst = cv.undistort(img, self.matrix, self.dist_coeffs, None, self.newcameramtx)
         return dst
@@ -90,30 +97,14 @@ class ImageProcessor:
         new_frame = cv.warpPerspective(
             dst, self.perspective_transform, (self.width, self.height))
         return new_frame
-    
+
     def adapt_and_calibrate_img (self, img):
         try:
             self.perspective_transform = self.get_perspective_transform(self.calibrate_img(img))
         except:
             print("no aruco grid found")
         return self.get_transformed_img(img)
-    
-    def get_plants (self, img):
-        plants = []
-        results = PLANT_PREDICTION_MODEL.predict(img, conf=0.4,classes=0, verbose=False)
-        
-        # annotated_frame = results[0].plot()
 
-        # cv.imshow("YOLOv8 Inference", annotated_frame)
-        # cv.waitKey(500)
-
-        for xywh in results[0].boxes.xywh:
-            # append only x and y coords of the center
-            plants.append((int(xywh[0]), int(xywh[1])))
-                        
-        self.plants = plants
-        return plants
-    
     def get_solar_panels (self, img):
         solar_panels = [0]*9
         # cut 60%

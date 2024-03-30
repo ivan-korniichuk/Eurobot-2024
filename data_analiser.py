@@ -1,19 +1,24 @@
 class DataAnaliser:
-    def __init__(self, b_mid, y_mid, b_corner, y_corner, b_reserved, y_reserved):
-        self.b_mid = b_mid
-        self.y_mid = y_mid
-        self.b_corner = b_corner
-        self.y_corner = y_corner
-        self.b_reserved = b_reserved
-        self.y_reserved = y_reserved
+    def __init__(self, offset, b_mid, y_mid, b_corner, y_corner, b_reserved, y_reserved):
+        self.offset_x, self.offset_y, _, _ = offset
+        self.b_mid = self.apply_offset(b_mid)
+        self.y_mid = self.apply_offset(y_mid)
+        self.b_corner = self.apply_offset(b_corner)
+        self.y_corner = self.apply_offset(y_corner)
+        self.b_reserved = self.apply_offset(b_reserved)
+        self.y_reserved = self.apply_offset(y_reserved)
         self.default_solar_pos = [0]*9
+
+    def apply_offset(self, corners):
+        updated_corners = []
+        for corner in corners:
+            updated_corners.append((corner[0] + self.offset_x, corner[1] + self.offset_y))
+        return updated_corners
 
     def update (self, plants):
         print(len(plants))
         self.plants = plants
         # self.solar_panels = solar_panels
-
-
 
     def cluster_plants (self):
         non_assigned_plants = []

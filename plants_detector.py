@@ -2,11 +2,11 @@ from multiprocessing.connection import Listener
 import time
 from ultralytics import YOLO
 
-model = YOLO('models/i900model8500.pt')
+MODEL = YOLO('models/i900model8500.pt')
 
 def get_plants (img):
     plants = []
-    results = model.predict(img, conf=0.4,classes=0, verbose=False)
+    results = MODEL.predict(img, conf=0.4,classes=0, verbose=False)
 
     for xywh in results[0].boxes.xywh:
         # append only x and y coords of the center

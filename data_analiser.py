@@ -8,6 +8,7 @@ class DataAnaliser:
         self.b_reserved = self.apply_offset(b_reserved)
         self.y_reserved = self.apply_offset(y_reserved)
         self.default_solar_pos = [0]*9
+        self.plants = [0]*7
 
     def apply_offset(self, corners):
         updated_corners = []
@@ -31,20 +32,6 @@ class DataAnaliser:
 
 
         for plant in self.plants:
-
-            # for b_area in self.b_areas:
-            #     if self.is_in_range(plant, b_area):
-            #         b_plants.append(plant)
-            #         break
-            # # else:
-            # #     continue
-
-            # for y_area in self.y_areas:
-            #     if self.is_in_range(plant, y_area):
-            #         y_plants.append(plant)
-            #         break
-            # # else:
-            # #     continue
             if self.is_in_range(plant, self.b_mid):
                 b_mid_plants.append(plant)
                 continue
@@ -71,7 +58,7 @@ class DataAnaliser:
 
             non_assigned_plants.append(plant)
 
-        return [
+        self.plants = [
             non_assigned_plants,
             b_mid_plants,
             y_mid_plants,
@@ -79,6 +66,7 @@ class DataAnaliser:
             y_corner_plants,
             b_reserved_plants,
             y_reserved_plants]
+        return self.plants
 
                 
                 
@@ -103,3 +91,14 @@ class DataAnaliser:
     # def analyse_solar_panels (self):
     #     self.solar_panels
     #     return
+
+# class Plants:
+#     def __init__(self, non_assigned_plants = [], b_mid_plants = [], y_mid_plants = [], b_corner_plants = [],
+#                  y_corner_plants = [], b_reserved_plants = [], y_reserved_plants = []):
+#             self.non_assigned_plants = non_assigned_plants
+#             self.b_mid_plants = b_mid_plants
+#             self.y_mid_plants = y_mid_plants
+#             self.b_corner_plants = b_corner_plants
+#             self.y_corner_plants = y_corner_plants
+#             self.b_reserved_plants = b_reserved_plants
+#             self.y_reserved_plants = y_reserved_plants

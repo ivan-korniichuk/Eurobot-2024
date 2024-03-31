@@ -135,7 +135,6 @@ class Path_Finder:
         for path in self.paths:
             lines.append([LineString(path).length, path])
         lines.sort(key=lambda x: x[0])
-        print(lines)
         return lines[0][1]
     
     def draw_graph (self):

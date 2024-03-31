@@ -21,6 +21,7 @@ class Visualiser:
         self.corner_dropoff_y = self.apply_offset(y_corner)
         self.sima_area_b = self.apply_offset(sima_area_b)
         self.sima_area_y = self.apply_offset(sima_area_y)
+        self.view = None
 
     def apply_offset(self, corners):
         updated_corners = []
@@ -37,6 +38,11 @@ class Visualiser:
             color=color,
             thickness=5,
         )
+
+    def draw_path(self, path):
+        for i in range(len(path) - 1):
+            cv.line(self.view, list(path[i]), list(path[i + 1]), (255, 0, 0), 3)
+        return
 
     # # delete, move to data_analyser
     # def draw_rectangles (self, rectangles, color, thickness = 5):
@@ -61,7 +67,7 @@ class Visualiser:
         self.draw_rectangle(self.sima_area_y, YELLOW)
 
 
-    def update(self, img, plants):
+    def update(self, img, plants, path):
         self.view = img
         if plants:
             non_assigned_plants, b_mid_plants, y_mid_plants, b_corner_plants, y_corner_plants, b_reserved_plants, y_reserved_plants = plants
@@ -80,4 +86,6 @@ class Visualiser:
                 self.draw_plant(plant, RED)
             for plant in y_reserved_plants:
                 self.draw_plant(plant, RED)
+        self.draw_path(path)
+        self.view
         return self.view

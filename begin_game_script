@@ -28,4 +28,4 @@ done
 
 echo Starting game
 
-echo begin > /dev/udp/192.168.0.144/9999 # TODO: Change to correct IP and port
+echo go > /dev/udp/192.168.0.144/9999 # TODO: Change to correct IP and port

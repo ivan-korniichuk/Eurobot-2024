@@ -1,4 +1,5 @@
 import sys
+import time
 from math import sqrt
 from client import UDPClient
 
@@ -10,10 +11,12 @@ class MainAI:
     def __init__(self, color):
         self.color = color
         self.client = UDPClient("127.0.0.1", "9999")  # TODO Replace with IP of Raspberry Pi
+        self.client.sock.sendto(b'', ("0.0.0.0", 1234))  # send random data so that we can get the port number of the socket
+        print(self.client.sock)
 
-    def pickUpPlant(self):
+    def pickUpPlant(self) -> str:
         self.client.send("pickup-plant")
-        self.client.receive()
+        return self.client.receive()
 
     def placePlant(self):
         self.client.send("place-plant")
@@ -42,17 +45,14 @@ def distance(node1: Point, node2: Point) -> float:
     return sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2))
 
 
-def nextPlantToGoTo(plants, main_bot_location):
-    smallestDistance = distance(main_bot_location, plants[0])
+def nextPlantToGoTo(plants, main_bot_location, enemy_bot_location):
+    smallestDistance = distance(main_bot_location, plants[0]) - distance(enemy_bot_location, plants[0])
     smallestIndex = 0
     for i, plant in enumerate(plants[1:]):
-        if distance(plant, main_bot_location) < smallestDistance:
-            smallestDistance = distance(plant, main_bot_location)
+        distanceCompare = distance(plant, main_bot_location) - distance(plant, enemy_bot_location)
+        if distanceCompare < smallestDistance:
+            smallestDistance = distanceCompare
             smallestIndex = i
-        if distance(plant, main_bot_location) == smallestDistance:  # if the distances are same, use plant furthest from opponent
-            enemyBot = getEnemyBotLocation()
-            if distance(plant, enemyBot) > distance(plants[smallestIndex], enemyBot):
-                smallestIndex = i
 
     return plants[smallestIndex]
 
@@ -70,19 +70,38 @@ def main():
 
     ai = MainAI(color)
 
+    print("Ready to begin.")
+
+    # Wait for the pulling of cord
+    while ai.client.receive() != "go\n":
+        pass
+
     # BEGIN THE GAME
+    startTime = time.time()
+    print("GO")
     ai.openingPhase()
-    while True:
-        # TODO: Incomplete Code, will develop a detailed strategy with all or most possible outcomes
+    while startTime - time.time() < 90:  # run beginning strategy until last 10 seconds
         plants: list[Point] = getAvailablePlants()
         main_bot_location: Point = getMainBotLocation()
-        nextPlant = nextPlantToGoTo(plants, main_bot_location)
+        enemy_bot_location: Point = getEnemyBotLocation()
+        if len(plants) == 0:
+            ai.orientSolarPanels()
+            plants = getOurReservedPlants()
+
+        nextPlant = nextPlantToGoTo(plants, main_bot_location, enemy_bot_location)
         ai.moveBotToLoc(nextPlant)
-        ai.pickUpPlant()
+        plantType = ai.pickUpPlant()
 
         # Decide where to place plant
-        # ig place into a planter but im not 100% sure
-        ai.moveBotToLoc(reservedPlanter)
-        if not ai.placePlant():
-            ai.moveBotToLoc(otherPlanter)
-            ai.placePlant()
+        placeToPlant = nextPlaceToPlant(plantType)
+
+        # Go to planting area and place plant
+        ai.moveBotToLoc(placeToPlant)
+        ai.placePlant()  # guaranteed to place without error unless emergency stop button is pressed
+
+    # Last 10 seconds now
+    # TODO: write last 10 seconds code
+
+
+if __name__ == "__main__":
+    main()

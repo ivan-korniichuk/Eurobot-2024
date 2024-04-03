@@ -1,17 +1,23 @@
 import sys
 import time
 from math import sqrt
+from threading import Thread
 from client import UDPClient
-
+from main import Main
 
 Point = tuple[int, int]
+TeamColors = ["Blue", "Yellow"]
 
 
 class MainAI:
+    MAX_DISTANCE_TRAVEL = sqrt(2775 ** 2 + 1775 ** 2)
     def __init__(self, color):
         self.color = color
         self.client = UDPClient("127.0.0.1", "9999")  # TODO Replace with IP of Raspberry Pi
         self.client.sock.sendto(b'', ("0.0.0.0", 1234))  # send random data so that we can get the port number of the socket
+        self.main_class = Main(color)
+        self.main_thread = Thread(target=self.main_class.start)
+        self.main_thread.start()
         print(self.client.sock)
 
     def pickUpPlant(self) -> str:
@@ -22,9 +28,15 @@ class MainAI:
         self.client.send("place-plant")
         self.client.receive()
 
-    def moveBotToLoc(self, loc):
-        # TODO: Call Pathfinding to create path
-        pass
+    def moveBotToLoc(self, loc: Point) -> None:
+        self.main_class.navigate_robot(loc)
+        path = self.main_class.path
+        if len(path) == 2:
+            endSpeed = 0
+        else:
+            # Map distance to 0-255 value
+            endSpeed = round((distance(path[0], path[1]) / distance(path[1], path[2])) * (255/self.MAX_DISTANCE_TRAVEL))
+        self.client.send(f"moveToLoc {str(path[0]).replace(' ', '')} {str(path[1]).replace(' ', '')} {endSpeed}")
 
     def orientSolarPanels(self):
         # TODO: call Solar Panel class and use moveBotToLoc
@@ -35,7 +47,28 @@ class MainAI:
         pass
 
     def moveBackToHome(self):
-        # TODO: call moveBotToLoc to send to charging station
+        # Plan is to start is our reserved area (at least for now), so go to area with least number of plants
+        if len(self.main_class.data_analiser.plants[1 + TeamColors.index(self.color)]) < len(self.main_class.data_analiser.plants[3 + TeamColors.index(self.color)]):
+            # TODO: pre-determine some location where bot is partially inside area
+            self.main_class.navigate_robot(self.main_class.data_analiser.plants[1 + TeamColors.index(self.color)][0])
+        else:
+            # TODO: same as above
+            self.main_class.navigate_robot(self.main_class.data_analiser.plants[3 + TeamColors.index(self.color)][0])
+
+        self.moveBotToLoc(self.main_class.path)
+
+    def getAvailablePlants(self):
+        while self.main_class.data_analiser.plants == [0, 0, 0, 0, 0, 0, 0]:
+            pass
+        return self.main_class.data_analiser.plants[0]
+
+    def getMainBotLocation(self):
+        pass
+
+    def getOurReservedPlants(self):
+        return self.main_class.data_analiser.plants[5 + TeamColors.index(self.color)]
+
+    def nextPlaceToPlant(self, plantType) -> Point:
         pass
 
 
@@ -64,7 +97,7 @@ def main():
         print("Inputted team color is required.")
         return
 
-    if color not in ['Yellow', 'Blue']:
+    if color not in TeamColors:
         print("Inputted team color must be Yellow or Blue.")
         return
 
@@ -81,19 +114,19 @@ def main():
     print("GO")
     ai.openingPhase()
     while startTime - time.time() < 90:  # run beginning strategy until last 10 seconds
-        plants: list[Point] = getAvailablePlants()
-        main_bot_location: Point = getMainBotLocation()
-        enemy_bot_location: Point = getEnemyBotLocation()
+        plants: list[Point] = ai.getAvailablePlants()
+        main_bot_location: Point = ai.getMainBotLocation()
+        enemy_bot_location: Point = ai.getEnemyBotLocation()
         if len(plants) == 0:
             ai.orientSolarPanels()
-            plants = getOurReservedPlants()
+            plants = ai.getOurReservedPlants()
 
         nextPlant = nextPlantToGoTo(plants, main_bot_location, enemy_bot_location)
         ai.moveBotToLoc(nextPlant)
         plantType = ai.pickUpPlant()
 
         # Decide where to place plant
-        placeToPlant = nextPlaceToPlant(plantType)
+        placeToPlant = ai.nextPlaceToPlant(plantType)
 
         # Go to planting area and place plant
         ai.moveBotToLoc(placeToPlant)

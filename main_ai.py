@@ -72,6 +72,9 @@ class MainAI:
     def nextPlaceToPlant(self, plantType) -> Point:
         pass
 
+    def getEnemyBotLocation(self):
+        pass
+
 
 def distance(node1: Point, node2: Point) -> float:
     x1, y1 = node1

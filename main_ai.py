@@ -11,6 +11,7 @@ TeamColors = ["Blue", "Yellow"]
 
 class MainAI:
     MAX_DISTANCE_TRAVEL = sqrt(2775 ** 2 + 1775 ** 2)
+
     def __init__(self, color):
         self.color = color
         self.client = UDPClient("127.0.0.1", "9999")  # TODO Replace with IP of Raspberry Pi
@@ -113,7 +114,7 @@ def main():
     startTime = time.time()
     print("GO")
     ai.openingPhase()
-    while startTime - time.time() < 90:  # run beginning strategy until last 10 seconds
+    while time.time() - startTime < 90:  # run beginning strategy until last 10 seconds
         plants: list[Point] = ai.getAvailablePlants()
         main_bot_location: Point = ai.getMainBotLocation()
         enemy_bot_location: Point = ai.getEnemyBotLocation()

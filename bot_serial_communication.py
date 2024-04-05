@@ -17,12 +17,12 @@ class MainBotSerialCommunication:  # TODO: To be updated as needed
             self.arm = device1
 
     def moveArm(self, x: int, y: int, z: int):  # x, y, and z will be in cm
-        byte_val = (1 << 24) + (x << 16) + (y << 8) + z
+        byte_val = (x << 16) + (y << 8) + z
         self.arm.write(byte_val.to_bytes(4, signed=False))
         self.arm.read()
 
     def closeArm(self):
-        self.arm.write(0)
+        self.arm.write(1)
         self.arm.read()
 
     def moveBot(self, start: Point, end: Point, angle_from, end_speed):

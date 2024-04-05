@@ -1,31 +1,23 @@
 #!/bin/bash
 pin=5
-sudo raspi-gpio set $pin ip pd
+sudo pinctrl set $pin ip pd
 
-pin_read=$(sudo raspi-gpio get $pin | \
-awk -F ' ' '{print $3}' | \
-awk -F '' '{print $7}')
+pin_read=$(sudo pinctrl get $pin | awk -F ' ' '{print $5}')
 
-while [ $pin_read -le 0 ]
+while [ "$pin_read" = "lo" ]
 do
-    pin_read=$(sudo raspi-gpio get $pin | \
-    awk -F ' ' '{print $3}' | \
-    awk -F '' '{print $7}')
+    pin_read=$(sudo pinctrl get $pin | awk -F ' ' '{print $5}')
 done
 
 echo waiting for removal...
 
-pin_read=$(sudo raspi-gpio get $pin | \
-awk -F ' ' '{print $3}' | \
-awk -F '' '{print $7}')
+pin_read=$(sudo pinctrl get $pin | awk -F ' ' '{print $5}')
 
-while [ $pin_read -ge 1 ]
+while [ "$pin_read" = "hi" ]
 do
-    pin_read=$(sudo raspi-gpio get $pin | \
-    awk -F ' ' '{print $3}' | \
-    awk -F '' '{print $7}')
+    pin_read=$(sudo pinctrl get $pin | awk -F ' ' '{print $5}')
 done
 
 echo Starting game
 
-echo go > /dev/udp/192.168.0.144/9999 # TODO: Change to correct IP and port
+echo go > /dev/udp/172.20.10.8/9999 # TODO: Change to correct IP and port

@@ -13,9 +13,9 @@ from visualiser import Visualiser
 # TEAM_IS_BLUE = True
 # TEAM_IS_BLUE = 
 # WIDTH_HEIGHT = (3000, 2000)
-WIDTH_HEIGHT = (3500, 2500)
+WIDTH_HEIGHT = (4000, 3000)
 MARKER_OFFSET = (750, 500)
-OFFSET = (250, 0, 250, 500)
+OFFSET = (500, 0, 500, 1000)
 DIST_COEFFS = np.array([-3.4, -0.2, 0.015, 0, 0.05])
 CAMERA_MATRIX = np.array([[5000, 0, 970],
                         [0, 5000, 550],
@@ -33,9 +33,17 @@ DROP_OFF_Y_COR = [(2550, 1550), (3000, 2000)]
 # SOLAR_PANELS_G = [(), (), ()]
 SIMA_AREA_Y = [(1500, 0), (1950, 150)]
 SIMA_AREA_B = [(1050, 0), (1500, 150)]
+SIMAS_AREA = [(1050, 0), (1050, 150), (1950, 150),(1950, 0)]
+
+MAIN_BBOX = [450, 450]
+# temporary
+CAMERA_POS = [1500, -240, 1570]
+CAMERA_POS = [CAMERA_POS[0] + OFFSET[0], CAMERA_POS[1] + OFFSET[1], CAMERA_POS[2]]
+# CAMERA_POS_Y = 
+# CAMERA_POS_B = 
 
 class Main:
-    def __init__(self, team_color = "None"):
+    def __init__(self, team_color = "None", height = 430):
         self.cap = cv.VideoCapture(1)
         self.visualiser = Visualiser(OFFSET, DROP_OFF_B_MID, DROP_OFF_Y_MID, DROP_OFF_B_COR, DROP_OFF_Y_COR, RESERVED_AREA_B,
                             RESERVED_AREA_Y, SIMA_AREA_B, SIMA_AREA_Y)
@@ -44,8 +52,9 @@ class Main:
         self.image_processor = None
         self.img = None
         self.set_image_processor()
-        self.main_navigation = MainNavigation(team_color, 25)
-        self.path = []
+        self.main_navigation = MainNavigation(OFFSET, team_color, main_bounding_box=MAIN_BBOX, simas_base=SIMAS_AREA,
+                                            reserved_yellow=RESERVED_AREA_Y, reserved_blue=RESERVED_AREA_B, camera_position=CAMERA_POS, height=height)
+        self.angle_and_path = [0, []]
         self.main_is_running = False
         self.lock = threading.Lock()
         self.on_navigation_event = threading.Event()
@@ -100,8 +109,9 @@ class Main:
                             pass
                         self.on_navigation_event.clear()
                         # path = self.main_navigation.navigate(self.img, (2775,1775))
-
-                        self.visualiser.update(img2, plants, self.path)
+                        if self.main_navigation.robot:
+                            cv.putText(img2, str(round(self.main_navigation.robot[1],2)), self.main_navigation.robot[0], 6,4, (255, 100,120), 9)
+                        self.visualiser.update(img2, plants, self.angle_and_path[1])
                         
                         # time5 = time.time_ns()
                         # print("send time")
@@ -124,5 +134,9 @@ class Main:
         self.on_navigation_event.wait()
 
         with self.lock:
-            self.path = self.main_navigation.navigate(self.img, (start[0] + OFFSET[0], start[1] + OFFSET[1]))
+            self.angle_and_path = self.main_navigation.navigate(self.img, (start[0] + OFFSET[0], start[1] + OFFSET[1]))
+
+    def get_robot(self):
+        return self.main_navigation.get_robot(self.img)
+
         

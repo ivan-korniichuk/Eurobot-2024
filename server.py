@@ -28,6 +28,8 @@ class UDPServerHandler(socketserver.BaseRequestHandler):
                 returnVal = main_robot.moveToLoc(parsed_data)
             case "solar-panels":
                 returnVal = main_robot.solarPanels()
+            case "stop-moving":
+                returnVal = main_robot.stopMoving()
             case _:
                 returnVal = None
         if returnVal is not None:

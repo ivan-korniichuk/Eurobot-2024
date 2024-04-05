@@ -26,3 +26,6 @@ class MainRobot:
 
     def solarPanels(self):
         pass  # TODO
+
+    def stopMoving(self):
+        self.serial_communicator.stopBot()

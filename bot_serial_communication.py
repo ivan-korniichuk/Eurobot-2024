@@ -1,3 +1,4 @@
+import subprocess
 from math import atan2, pi
 import serial
 Point = tuple[int, int]
@@ -5,8 +6,15 @@ Point = tuple[int, int]
 
 class MainBotSerialCommunication:  # TODO: To be updated as needed
     def __init__(self):
-        self.locomotion = serial.Serial('/dev/', 115200)  # TODO: Replace with correct ports
-        self.arm = serial.Serial('/dev/', 115200)  # TODO: Replace with correct ports
+        device1 = serial.Serial("/dev/ttyUSB0", 115200)
+        device2 = serial.Serial("/dev/ttyUSB1", 115200)
+        device1.write(b'type')
+        if device1.read() == 1:
+            self.locomotion = device1
+            self.arm = device2
+        else:
+            self.locomotion = device2
+            self.arm = device1
 
     def moveArm(self, x: int, y: int, z: int):  # x, y, and z will be in cm
         byte_val = (1 << 24) + (x << 16) + (y << 8) + z

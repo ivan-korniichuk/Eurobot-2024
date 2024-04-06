@@ -47,7 +47,7 @@ class MainAI:
             except Exception:
                 self.client.send("stop-moving")
 
-    def orientSolarPanels(self):
+    def orientSolarPanels(self, overide_move):
         # TODO: call Solar Panel class and use moveBotToLoc
         pass
 
@@ -133,6 +133,8 @@ def main():
         main_bot_location, enemy_bot_location = ai.getBotLocations()
         if not main_bot_location:
             continue
+        if not plants:
+            ai.orientSolarPanels(False)
             plants = ai.getOurReservedPlants()
 
         nextPlant = nextPlantToGoTo(plants, main_bot_location, enemy_bot_location)
@@ -146,8 +148,8 @@ def main():
         ai.moveBotToLoc(placeToPlant)
         ai.placePlant()  # guaranteed to place without error unless emergency stop button is pressed
 
-    # Last 10 seconds now
-    # TODO: write last 10 seconds code
+    # Last 15 seconds now
+    ai.orientSolarPanels(True)
 
 
 if __name__ == "__main__":

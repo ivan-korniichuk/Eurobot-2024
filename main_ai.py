@@ -32,7 +32,7 @@ class MainAI:
         self.client.receive()
 
     def moveBotToLoc(self, loc: Point) -> None:
-        while distance(loc, self.getMainBotLocation()) >= 150:  # Continue calculating paths until we are close enough to point
+        while distance(loc, self.getBotLocations()) >= 150:  # Continue calculating paths until we are close enough to point
             try:
                 self.main_class.navigate_robot(loc)
                 path = self.main_class.path
@@ -71,8 +71,14 @@ class MainAI:
             pass
         return self.main_class.data_analiser.plants[0]
 
-    def getMainBotLocation(self):
-        pass
+    def getBotLocations(self):
+        our_bot, opponent_corners = self.main_class.main_navigation.detect_robots(self.main_class.img)
+        if opponent_corners:
+            tl, _, br, _ = opponent_corners[0]
+            cX = int((tl[0] + br[0]) / 2.0)
+            cY = int((tl[1] + br[1]) / 2.0)
+            opponent_corners = [cX, cY]
+        return our_bot[0], opponent_corners
 
     def getOurReservedPlants(self):
         return self.main_class.data_analiser.plants[5 + TeamColors.index(self.color)]
@@ -131,6 +137,7 @@ def main():
         enemy_bot_location: Point = ai.getEnemyBotLocation()
         if len(plants) == 0:
             ai.orientSolarPanels()
+        main_bot_location, enemy_bot_location = ai.getBotLocations()
             plants = ai.getOurReservedPlants()
 
         nextPlant = nextPlantToGoTo(plants, main_bot_location, enemy_bot_location)

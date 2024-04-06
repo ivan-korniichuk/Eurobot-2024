@@ -52,8 +52,8 @@ class MainAI:
         pass
 
     def openingPhase(self):
-        # TODO: call moveBotToLoc to either push all plants to a corner or knock over all plants
-        pass
+        self.client.send("openingPhase")
+        self.client.receive()
 
     def moveBackToHome(self):
         # Plan is to start is our reserved area (at least for now), so go to area with least number of plants

@@ -20,6 +20,7 @@ class MainAI:
         self.main_class = Main(color)
         self.main_thread = Thread(target=self.main_class.start)
         self.main_thread.start()
+        self.numPlantsInReservedPlanter = 0
         print(self.client.sock)
 
     def pickUpPlant(self) -> str:

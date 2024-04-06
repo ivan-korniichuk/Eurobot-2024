@@ -35,7 +35,7 @@ class MainAI:
         while distance(loc, self.getBotLocations()) >= 150:  # Continue calculating paths until we are close enough to point
             try:
                 self.main_class.navigate_robot(loc)
-                path = self.main_class.path
+                angleFrom, path = self.main_class.angle_and_path
                 if self.oldLoc != path[1]:  # only send new path once a new waypoint is given
                     self.oldLoc = path[1]
                     if len(path) == 2:
@@ -43,7 +43,7 @@ class MainAI:
                     else:
                         # Map distance to 0-255 value
                         endSpeed = round((distance(path[0], path[1]) / distance(path[1], path[2])) * (255/self.MAX_DISTANCE_TRAVEL))
-                    self.client.send(f"moveToLoc {str(path[0]).replace(' ', '')} {str(path[1]).replace(' ', '')} {endSpeed}")
+                    self.client.send(f"moveToLoc {str(path[0]).replace(' ', '')} {str(path[1]).replace(' ', '')} {angleFrom} {endSpeed}")
             except Exception:
                 self.client.send("stop-moving")
 

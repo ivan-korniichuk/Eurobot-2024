@@ -86,12 +86,9 @@ class MainAI:
     def nextPlaceToPlant(self, plantType) -> Point:
         pass
 
-    def getEnemyBotLocation(self):
-        pass
-
 
 def distance(node1: Point, node2: Point) -> float:
-    x1, y1 = node1
+    x1, y1 = node1 if node1 else (0, 0)
     x2, y2 = node2
     return sqrt(((x2 - x1) ** 2) + ((y2 - y1) ** 2))
 
@@ -133,11 +130,9 @@ def main():
     ai.openingPhase()
     while time.time() - startTime < 90:  # run beginning strategy until last 10 seconds
         plants: list[Point] = ai.getAvailablePlants()
-        main_bot_location: Point = ai.getMainBotLocation()
-        enemy_bot_location: Point = ai.getEnemyBotLocation()
-        if len(plants) == 0:
-            ai.orientSolarPanels()
         main_bot_location, enemy_bot_location = ai.getBotLocations()
+        if not main_bot_location:
+            continue
             plants = ai.getOurReservedPlants()
 
         nextPlant = nextPlantToGoTo(plants, main_bot_location, enemy_bot_location)

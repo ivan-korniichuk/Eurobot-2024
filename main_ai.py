@@ -128,7 +128,7 @@ def main():
     startTime = time.time()
     print("GO")
     ai.openingPhase()
-    while time.time() - startTime < 90:  # run beginning strategy until last 10 seconds
+    while time.time() - startTime < 85:  # run beginning strategy until last 15 seconds
         plants: list[Point] = ai.getAvailablePlants()
         main_bot_location, enemy_bot_location = ai.getBotLocations()
         if not main_bot_location:

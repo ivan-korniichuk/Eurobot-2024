@@ -120,7 +120,7 @@ class Path_Finder:
         end_points = paths[:, :, 1]
 
         # Check if paths intersect any polygons
-        polygons_tensor = torch.tensor([torch.tensor(polygon.exterior.coords, dtype=torch.float32) for polygon in self.polygons])
+        polygons_tensor = torch.stack([torch.tensor(polygon.exterior.coords, dtype=torch.float32) for polygon in self.polygons])
         diff = polygons_tensor.unsqueeze(1).unsqueeze(1) - paths.unsqueeze(0)
         cross_products = diff[:, :, :, :-1, 0] * diff[:, :, :, 1:, 1] - diff[:, :, :, :-1, 1] * diff[:, :, :, 1:, 0]
         sign_changes = torch.sign(cross_products[:, :, :, :-1]) != torch.sign(cross_products[:, :, :, 1:])

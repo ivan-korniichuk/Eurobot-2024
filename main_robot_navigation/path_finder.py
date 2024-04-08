@@ -55,9 +55,6 @@ class Path_Finder:
         return torch.any(winding_numbers != 0).item()
 
     def find_path(self, start, end):
-        if self.is_point_inside_any_polygon(end):
-            raise ValueError("Error: End point is inside a contour")
-
         if self.is_point_inside_any_polygon(start):
             polygon = self.get_outer_polygon(start)
             centroid = torch.tensor(polygon.centroid.coords[0], dtype=torch.float32)
@@ -121,7 +118,7 @@ class Path_Finder:
 
         # Check if paths intersect any polygons
         polygons_tensor = torch.stack([torch.tensor(polygon.exterior.coords, dtype=torch.float32) for polygon in self.polygons])
-        diff = polygons_tensor.unsqueeze(1).unsqueeze(1) - paths.unsqueeze(0)
+        diff = polygons_tensor.unsqueeze(1).unsqueeze(1) - paths.unsqueeze(0).unsqueeze(2)
         cross_products = diff[:, :, :, :-1, 0] * diff[:, :, :, 1:, 1] - diff[:, :, :, :-1, 1] * diff[:, :, :, 1:, 0]
         sign_changes = torch.sign(cross_products[:, :, :, :-1]) != torch.sign(cross_products[:, :, :, 1:])
         intersects = torch.any(sign_changes, dim=-1)
@@ -130,8 +127,8 @@ class Path_Finder:
         # Check if paths cross any polygons
         if check_crossing:
             path_crosses = torch.any(torch.logical_and(
-                torch.any(start_points.unsqueeze(0) != polygons_tensor.unsqueeze(1).unsqueeze(1), dim=-1),
-                torch.any(end_points.unsqueeze(0) != polygons_tensor.unsqueeze(1).unsqueeze(1), dim=-1)
+                torch.any(start_points.unsqueeze(0).unsqueeze(-2) != polygons_tensor.unsqueeze(1).unsqueeze(1), dim=-1),
+                torch.any(end_points.unsqueeze(0).unsqueeze(-2) != polygons_tensor.unsqueeze(1).unsqueeze(1), dim=-1)
             ), dim=0)
         else:
             path_crosses = torch.zeros_like(path_intersects)
@@ -264,9 +261,6 @@ class Path_Finder:
                     self.contours[i][2] = True
 
     def find_shortest_path(self, min_distance=150):
-        if not self.paths:
-            raise ValueError("Error: No path found.")
-
         lengths = torch.tensor([LineString(path).length for path in self.paths])
         shortest_index = torch.argmin(lengths)
         short_path = self.paths[shortest_index.item()]

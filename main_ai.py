@@ -13,6 +13,8 @@ class MainAI:
     MAX_DISTANCE_TRAVEL = sqrt(2775 ** 2 + 1775 ** 2)
 
     def __init__(self, color):
+        self.openingPath = [[(500, 2000), (700, 2500), (1300, 2500), (1500, 2000), (1300, 1500), (700, 1500), (115, 664)],
+                            [(500, 2000), (700, 1500), (1300, 1500), (1500, 2000), (1300, 2500), (700, 2500), (115, 3336)]]
         self.oldLoc = None
         self.color = color
         self.client = UDPClient("127.0.0.1", "9999")  # TODO Replace with IP of Raspberry Pi
@@ -31,7 +33,7 @@ class MainAI:
         self.client.send("place-plant")
         self.client.receive()
 
-    def moveBotToLoc(self, loc: Point) -> None:
+    def moveBotToLoc(self, loc: Point, overrideEndSpeed=-1) -> None:
         while distance(loc, self.getBotLocations()) >= 150:  # Continue calculating paths until we are close enough to point
             try:
                 self.main_class.navigate_robot(loc)
@@ -39,7 +41,7 @@ class MainAI:
                 if self.oldLoc != path[1]:  # only send new path once a new waypoint is given
                     self.oldLoc = path[1]
                     if len(path) == 2:
-                        endSpeed = 0
+                        endSpeed = 0 if overrideEndSpeed == -1 else overrideEndSpeed
                     else:
                         # Map distance to 0-255 value
                         endSpeed = round((distance(path[0], path[1]) / distance(path[1], path[2])) * (255/self.MAX_DISTANCE_TRAVEL))
@@ -52,8 +54,8 @@ class MainAI:
         pass
 
     def openingPhase(self):
-        self.client.send("openingPhase")
-        self.client.receive()
+        for point in self.openingPath[TeamColors.index(self.color)]:
+            self.moveBotToLoc(point, 255)
 
     def moveBackToHome(self):
         # Plan is to start is our reserved area (at least for now), so go to area with least number of plants

@@ -18,8 +18,6 @@ class UDPServerHandler(socketserver.BaseRequestHandler):
         print("socker object: " + str(returnAddr))
         parsed_data = str(data, "utf-8").split(" ")
         match parsed_data[0]:
-            case "openingPhase":
-                returnVal = main_robot.openingPhase()
             case "pickup-plant":
                 returnVal = main_robot.pickUpPlant()
             case "place-plant":

@@ -15,9 +15,6 @@ class MainRobot:
         endPoint = (int(endPointRaw[0]), int(endPointRaw[1]))
         self.serial_communicator.moveBot(startPoint, endPoint, angleFrom, endSpeed)
 
-    def openingPhase(self):
-        pass  # TODO
-
     def pickUpPlant(self):
         pass  # TODO
 

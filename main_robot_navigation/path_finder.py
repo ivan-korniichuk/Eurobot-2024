@@ -112,13 +112,13 @@ class Path_Finder:
         self.paths = end_paths
         return end_paths
 
-    def check_path_batch(self, paths, check_crossing=True):
+    def check_path_batch(self, paths, end_point, check_crossing=True):
         start_points = paths[:, :, 0]
         end_points = paths[:, :, 1]
 
         # Check if paths intersect any polygons
         polygons_tensor = torch.stack([torch.tensor(polygon.exterior.coords, dtype=torch.float32) for polygon in self.polygons])
-        num_paths, num_points, _ = paths.shape
+        num_paths, num_points, _, _ = paths.shape
         num_polygons, num_polygon_points, _ = polygons_tensor.shape
         
         paths_expanded = paths.view(num_paths, num_points, 1, 1, 2).expand(num_paths, num_points, num_polygons, num_polygon_points, 2)
@@ -152,8 +152,14 @@ class Path_Finder:
         winding_numbers_end = torch.sum(torch.sign(cross_products_end), dim=-1)
         path_within = torch.any(torch.logical_and(winding_numbers_start != 0, winding_numbers_end != 0), dim=0)
 
+        # Check if paths end at the end point
+        path_ends_at_end_point = torch.all(end_points == end_point, dim=-1)
+
         # Combine the validity checks
-        valid_paths = torch.logical_not(torch.logical_or(torch.logical_or(path_intersects, path_crosses), path_within))
+        valid_paths = torch.logical_and(
+            torch.logical_not(torch.logical_or(torch.logical_or(path_intersects, path_crosses), path_within)),
+            path_ends_at_end_point
+        )
 
         return valid_paths
 
@@ -262,10 +268,10 @@ class Path_Finder:
             return [new_p1.tolist(), new_p2.tolist(), True]
 
     def make_pathes(self, start, end, check_crossing=True):
-        if not self.check_path_batch(torch.tensor([[start[0], end[0]]], dtype=torch.float32), check_crossing=check_crossing):
+        if not self.check_path_batch(torch.tensor([[start[0], end[0]]], dtype=torch.float32), end[0], check_crossing=check_crossing):
             contours_tensor = torch.tensor(self.contours, dtype=torch.float32)
             start_tensor = torch.tensor(start[0], dtype=torch.float32)
-            valid_contours = self.check_path_batch(torch.stack([start_tensor.expand(len(contours_tensor), 2), contours_tensor[:, 0]], dim=1), check_crossing=check_crossing)
+            valid_contours = self.check_path_batch(torch.stack([start_tensor.expand(len(contours_tensor), 2), contours_tensor[:, 0]], dim=1), end[0], check_crossing=check_crossing)
             for i in range(len(self.contours)):
                 if valid_contours[i]:
                     self.contours[i][2] = True

@@ -157,8 +157,11 @@ class Path_Finder:
                 return polygon
 
     def move_point_outside_polygon(self, start, end, centroid, polygon, distance):
-        start_vector = start - centroid
-        end_vector = end - centroid
+        start_tensor = torch.tensor(start, dtype=torch.float32)
+        end_tensor = torch.tensor(end, dtype=torch.float32)
+        
+        start_vector = start_tensor - centroid
+        end_vector = end_tensor - centroid
         start_unit_vector = start_vector / torch.norm(start_vector)
         end_unit_vector = end_vector / torch.norm(end_vector)
 
@@ -210,15 +213,15 @@ class Path_Finder:
         new_point = torch.zeros(2)
         if new_state == 1:
             new_point[0] = closest_edge[0] + distance
-            new_point[1] = start[1]
+            new_point[1] = start_tensor[1]
         elif new_state == 2:
-            new_point[0] = start[0]
+            new_point[0] = start_tensor[0]
             new_point[1] = closest_edge[1] + distance
         elif new_state == 3:
             new_point[0] = closest_edge[0] - distance
-            new_point[1] = start[1]
+            new_point[1] = start_tensor[1]
         elif new_state == 4:
-            new_point[0] = start[0]
+            new_point[0] = start_tensor[0]
             new_point[1] = closest_edge[1] - distance
 
         return new_point

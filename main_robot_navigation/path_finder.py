@@ -46,7 +46,7 @@ class Path_Finder:
 
     def is_point_inside_any_polygon(self, point):
         point_tensor = torch.tensor(point, dtype=torch.float32)
-        polygons_tensor = torch.tensor([torch.tensor(polygon.exterior.coords, dtype=torch.float32) for polygon in self.polygons])
+        polygons_tensor = torch.stack([torch.tensor(polygon.exterior.coords, dtype=torch.float32) for polygon in self.polygons])
 
         diff = polygons_tensor - point_tensor
         cross_products = diff[:, :-1, 0] * diff[:, 1:, 1] - diff[:, :-1, 1] * diff[:, 1:, 0]

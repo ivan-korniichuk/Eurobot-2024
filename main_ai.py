@@ -4,9 +4,11 @@ from math import sqrt
 from threading import Thread
 from client import UDPClient
 from main import Main
+import serial
 
 Point = tuple[int, int]
 TeamColors = ["Blue", "Yellow"]
+SIMA_IDS = [[68, 69, 70], [71, 72, 73]]
 
 
 class MainAI:
@@ -15,12 +17,12 @@ class MainAI:
     def __init__(self, color):
         self.openingPath = [[(500, 2000), (700, 2500), (1300, 2500), (1500, 2000), (1300, 1500), (700, 1500), (115, 664)],
                             [(500, 2000), (700, 1500), (1300, 1500), (1500, 2000), (1300, 2500), (700, 2500), (115, 3336)]]
-        self.oldLoc = None
         self.color = color
         self.client = UDPClient("127.0.0.1", "9999")  # TODO Replace with IP of Raspberry Pi
         self.client.sock.sendto(b'', ("0.0.0.0", 1234))  # send random data so that we can get the port number of the socket
-        self.main_class = Main(color)
+        self.main_class = Main(color, *SIMA_IDS[TeamColors.index(self.color)], sima_4=-1)
         self.main_thread = Thread(target=self.main_class.start)
+        self.main_thread.daemon = True
         self.main_thread.start()
         self.numPlantsInReservedPlanter = 0
         print(self.client.sock)
@@ -34,12 +36,15 @@ class MainAI:
         self.client.receive()
 
     def moveBotToLoc(self, loc: Point, overrideEndSpeed=-1) -> None:
-        while distance(loc, self.getBotLocations()) >= 150:  # Continue calculating paths until we are close enough to point
+        oldLoc = (-1, -1)
+
+        while True:  # Continue calculating paths until we are close enough to point
             try:
-                self.main_class.navigate_robot(loc)
-                angleFrom, path = self.main_class.angle_and_path
-                if self.oldLoc != path[1]:  # only send new path once a new waypoint is given
-                    self.oldLoc = path[1]
+                angleFrom, path = self.main_class.navigate_robot(loc)
+                if path is None or path == []:
+                    break
+                if oldLoc != path[1]:  # only send new path once a new waypoint is given
+                    oldLoc = path[1]
                     if len(path) == 2:
                         endSpeed = 0 if overrideEndSpeed == -1 else overrideEndSpeed
                     else:
@@ -88,6 +93,22 @@ class MainAI:
     def nextPlaceToPlant(self, plantType) -> Point:
         pass
 
+    def simaMovement(self, simaNum):
+        simaComs = serial.Serial("/dev/", 115200)  # TODO: Use correct port
+        oldPoint = (-1, -1)
+
+        while True:
+            try:
+                angle_from, path = self.main_class.navigate_sima(simaNum, self.main_class.data_analiser.plants[2*simaNum - 1 + TeamColors.index(self.color)][0])
+                if path is None or path == []:
+                    break
+                if path[1] != oldPoint:
+                    oldPoint = path[1]
+                    # TODO: Send path through serial
+            except Exception:
+                # TODO: Send sima stop signal
+                pass
+
 
 def distance(node1: Point, node2: Point) -> float:
     x1, y1 = node1 if node1 else (0, 0)
@@ -119,6 +140,9 @@ def main():
         return
 
     ai = MainAI(color)
+    sima_1_thread = Thread(target=ai.simaMovement, args=[1], daemon=True)
+    sima_2_thread = Thread(target=ai.simaMovement, args=[2], daemon=True)
+    sima_3_thread = Thread(target=ai.simaMovement, args=[3], daemon=True)
 
     print("Ready to begin.")
 
@@ -152,6 +176,21 @@ def main():
 
     # Last 15 seconds now
     ai.orientSolarPanels(True)
+
+    while time.time() - startTime < 90:
+        pass
+
+    # Last 10 seconds now
+    sima_1_thread.start()
+    sima_2_thread.start()
+    sima_3_thread.start()
+
+    while time.time() - startTime < 97:
+        pass
+
+    ai.moveBackToHome()
+
+    print("DONE")
 
 
 if __name__ == "__main__":

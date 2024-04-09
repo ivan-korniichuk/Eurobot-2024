@@ -6,12 +6,11 @@ import time
 import threading
 
 from data_analiser import DataAnaliser
-from main_robot_navigation.main_robot_navigation import MainNavigation
+from navigation.robot_navigation import MainNavigation
+from navigation.simas_navigation import SimaNavigation
 from image_processor import ImageProcessor
 from visualiser import Visualiser
 
-# TEAM_IS_BLUE = True
-# TEAM_IS_BLUE = 
 # WIDTH_HEIGHT = (3000, 2000)
 WIDTH_HEIGHT = (4000, 3000)
 MARKER_OFFSET = (750, 500)
@@ -35,7 +34,11 @@ SIMA_AREA_Y = [(1500, 0), (1950, 150)]
 SIMA_AREA_B = [(1050, 0), (1500, 150)]
 SIMAS_AREA = [(1050, 0), (1050, 150), (1950, 150),(1950, 0)]
 
-MAIN_BBOX = [450, 450]
+# MAIN_BBOX = [450, 450]
+MAIN_BBOX = [420, 420]
+SMALL_BBOX = [220, 220]
+SIMAS_BBOX = [60, 60]
+PLATS_BBOX = [55, 55]
 # temporary
 CAMERA_POS = [1500, -240, 1570]
 CAMERA_POS = [CAMERA_POS[0] + OFFSET[0], CAMERA_POS[1] + OFFSET[1], CAMERA_POS[2]]
@@ -43,7 +46,7 @@ CAMERA_POS = [CAMERA_POS[0] + OFFSET[0], CAMERA_POS[1] + OFFSET[1], CAMERA_POS[2
 # CAMERA_POS_B = 
 
 class Main:
-    def __init__(self, team_color = "None", height = 430):
+    def __init__(self, team_color, sima_1, sima_2, sima_3, sima_4, height = 440, simas_height = 120):
         self.cap = cv.VideoCapture(1)
         self.visualiser = Visualiser(OFFSET, DROP_OFF_B_MID, DROP_OFF_Y_MID, DROP_OFF_B_COR, DROP_OFF_Y_COR, RESERVED_AREA_B,
                             RESERVED_AREA_Y, SIMA_AREA_B, SIMA_AREA_Y)
@@ -52,9 +55,19 @@ class Main:
         self.image_processor = None
         self.img = None
         self.set_image_processor()
-        self.main_navigation = MainNavigation(OFFSET, team_color, main_bounding_box=MAIN_BBOX, simas_base=SIMAS_AREA,
-                                            reserved_yellow=RESERVED_AREA_Y, reserved_blue=RESERVED_AREA_B, camera_position=CAMERA_POS, height=height)
+        self.main_navigation = MainNavigation(OFFSET, team_color, sima_1_id=sima_1, sima_2_id=sima_2,sima_3_id=sima_3,sima_4_id=sima_4, 
+                                             main_bbox=MAIN_BBOX, simas_base=SIMAS_AREA, reserved_yellow=RESERVED_AREA_Y,
+                                             reserved_blue=RESERVED_AREA_B, camera_position=CAMERA_POS, plant_bbox= PLATS_BBOX,
+                                             height=height, simas_height=simas_height, small_bbox=SMALL_BBOX, sima_bbox = SIMAS_BBOX)
+        self.sima_navigation = SimaNavigation(OFFSET, team_color, sima_1_id=sima_1, sima_2_id=sima_2,sima_3_id=sima_3,sima_4_id=sima_4, 
+                                             simas_base=SIMAS_AREA, reserved_yellow=RESERVED_AREA_Y,
+                                             reserved_blue=RESERVED_AREA_B, camera_position=CAMERA_POS, plant_bbox= PLATS_BBOX,
+                                             height=height, simas_height=simas_height, small_bbox=SMALL_BBOX, sima_bbox = SIMAS_BBOX)
         self.angle_and_path = [0, []]
+        self.sima_1_angle_path = [0, []]
+        self.sima_2_angle_path = [0, []]
+        self.sima_3_angle_path = [0, []]
+        self.sima_4_angle_path = [0, []]
         self.main_is_running = False
         self.lock = threading.Lock()
         self.on_navigation_event = threading.Event()
@@ -110,8 +123,11 @@ class Main:
                         self.on_navigation_event.clear()
                         # path = self.main_navigation.navigate(self.img, (2775,1775))
                         if self.main_navigation.robot:
+                            print(self.main_navigation.robot)
                             cv.putText(img2, str(round(self.main_navigation.robot[1],2)), self.main_navigation.robot[0], 6,4, (255, 100,120), 9)
-                        self.visualiser.update(img2, plants, self.angle_and_path[1])
+                        self.visualiser.update(img2, plants, self.angle_and_path[1], 
+                                               [self.sima_1_angle_path[1], self.sima_2_angle_path[1],
+                                                self.sima_3_angle_path[1], self.sima_4_angle_path[1]])
                         
                         # time5 = time.time_ns()
                         # print("send time")
@@ -130,13 +146,46 @@ class Main:
         plants_detector_process.wait()  # Wait for the process to finish
         raise Exception("Error in main/plants_detector")
     
-    def navigate_robot(self, start):
+    def navigate_robot(self, end):
         self.on_navigation_event.wait()
 
-        with self.lock:
-            self.angle_and_path = self.main_navigation.navigate(self.img, (start[0] + OFFSET[0], start[1] + OFFSET[1]))
+        # with self.lock:
+        #     self.angle_and_path = self.main_navigation.navigate(self.img, (end[0] + OFFSET[0], end[1] + OFFSET[1]))
+        angle_and_path = self.main_navigation.navigate(self.img, (end[0] + OFFSET[0], end[1] + OFFSET[1]))
+        self.angle_and_path = angle_and_path
+        return angle_and_path
 
-    def get_robot(self):
-        return self.main_navigation.get_robot(self.img)
 
+    def navigate_sima(self, sima_no, end, plants = []):
+        if plants == []:
+            plants = self.data_analiser.plants[0]
+
+        # self.on_navigation_event.wait()
+
+        # with self.lock:
+        #     self.sima_1_angle_path = self.sima_navigation.navigate_sima(self.img, sima_no, plants, (end[0] + OFFSET[0], end[1] + OFFSET[1]))
+        #     print("sima_nav")
+        #     print(self.sima_1_angle_path)
+        sima_angle_and_path = self.sima_navigation.navigate_sima(self.img, sima_no, plants, (end[0] + OFFSET[0], end[1] + OFFSET[1]))
+        if sima_no == 1:
+            self.sima_1_angle_path = sima_angle_and_path
+        if sima_no == 2:
+            self.sima_2_angle_path = sima_angle_and_path
+        if sima_no == 3:
+            self.sima_3_angle_path = sima_angle_and_path
+        if sima_no == 4:
+            self.sima_4_angle_path = sima_angle_and_path
+
+        return sima_angle_and_path  
+
+    # def get_robot(self):
+    #     # self.on_navigation_event.wait()
+
+    #     # with self.lock:
+    #         return self.main_navigation.get_robot(self.img)
         
+    # def get_robots(self):
+    #     # self.on_navigation_event.wait()
+
+    #     # with self.lock:
+    #         return self.main_navigation.detect_robots(self.img)

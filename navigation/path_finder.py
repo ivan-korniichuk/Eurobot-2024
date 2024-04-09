@@ -1,7 +1,9 @@
-from shapely.geometry import LineString, Polygon, Point, box
+from shapely.geometry import LineString, Polygon, Point, box, MultiPoint, MultiPolygon, GeometryCollection
+from shapely.ops import unary_union
 import numpy as np
 import math
-import cv2 as cv
+import networkx as nx
+# import cv2 as cv
 # import matplotlib.pyplot as plt
 
 # make a class for a point
@@ -11,7 +13,7 @@ import cv2 as cv
 
 # range = how close can the center of the robot get to the borders while navigating(ideal 60% of the diameter)
 class Path_Finder:
-    def __init__ (self, offset, contours = [], default_contours = [], points = [], h_w = None, range = 200):
+    def __init__ (self, offset, contours = [], default_contours = [], points = [], h_w = None, range = 200, cluster_objects = False):
         self.contours = contours
         self.hw = h_w
         self.range = range
@@ -19,7 +21,13 @@ class Path_Finder:
         self.default_contours = default_contours
         self.bbox = box(minx=(range + self.offset[0]), miny=(range + self.offset[1]),
                          maxx=self.hw[1]-(range-self.offset[0]), maxy=self.hw[0]-(range-self.offset[1]))
-        self.points = self.populate(points)
+        self.cluster_objects = cluster_objects
+        if self.cluster_objects:
+            self.populate_with_clustering(points)
+        else:
+            self.points = self.populate(points)
+        self.paths = []
+        # self.max_end_bound = max_end_bound
     
     def update(self, contours = [], points = [], h_w = None, range = None):
         if contours:
@@ -34,17 +42,45 @@ class Path_Finder:
             self.bbox = box(minx=(range + self.offset[0]), miny=(range + self.offset[1]),
                          maxx=self.hw[1]-(range-self.offset[0]), maxy=self.hw[0]-(range-self.offset[1]))
 
-        self.points = self.populate(points)
+        if self.cluster_objects:
+            self.populate_with_clustering(points)
+        else:
+            self.points = self.populate(points)
 
     def populate (self, points):
         self.polygons = []
-        contours = self.contours + self.default_contours
+        contours = self.contours + [self.default_contours]
         for contour in contours:
             self.polygons.append(Polygon(contour))
             
         self.contours = self.reshape(contours)
-        print("new contours")
-        print(self.contours)
+        for point in points:
+            self.contours.append([point])
+
+    def extract_points_from_polygons(self, polygons):
+        points_list = []
+        for poly in polygons:
+            # Extract exterior points of each polygon and convert them to integers
+            exterior_points = [(int(x), int(y)) for x, y in poly.exterior.coords]
+            points_list.append(exterior_points)
+        return points_list
+    
+    def populate_with_clustering(self, points):
+        self.polygons = []
+        polygons = []
+        contours = self.contours + [self.default_contours]
+        # print(contours)
+        for contour in contours:
+            if contour:
+                polygons.append(Polygon(contour))
+
+        clustered_polygons = self.cluster_unite_polygons(polygons)
+
+        self.polygons = clustered_polygons
+
+        contours = self.extract_points_from_polygons(clustered_polygons)
+            
+        self.contours = self.reshape(contours)
         for point in points:
             self.contours.append([point])
 
@@ -102,8 +138,22 @@ class Path_Finder:
         for polygon in self.polygons:
             if point.within(polygon):
                 return polygon
+            
+    def cluster_unite_polygons(self, polygons):
+        final_polygons = []
+        for i, polygon in enumerate(polygons):
+            merged = False
+            for j, final_polygon in enumerate(final_polygons):
+                if polygon.intersects(final_polygon):
+                    merged_polygon = unary_union([polygon, final_polygon])
+                    final_polygons[j] = merged_polygon.convex_hull  # Convert to convex hull
+                    merged = True
+                    break
+            if not merged:
+                final_polygons.append(polygon.convex_hull)  # Convert to convex hull
+        return final_polygons
+    
         
-
     def move_point_outside_polygon(self, start, end, centroid, polygon, distance):
         closest_edge = self.closest_point(start, polygon)
         start_vector = (start[0]- centroid[0], start[1]- centroid[1])
@@ -191,8 +241,9 @@ class Path_Finder:
         i = 0
         used_nodes = []
         if self.is_point_inside_any_polygon(end):
-            print("Error end is inside a contour")
-            raise("Error end is inside a contour")
+            pass
+            # print("Error end is inside a contour")
+            # raise("Error end is inside a contour")
         if self.is_point_inside_any_polygon(start):
             print("Start is inside a contour. This can cause an error")
             print("NEW POINT")
@@ -241,7 +292,7 @@ class Path_Finder:
                     range -= 1
                     z -= 1
                 z += 1
-
+        print("END")
         self.paths = end[1]
 
         return end[1]
@@ -315,13 +366,6 @@ class Path_Finder:
     def distance(self, point1, point2):
         return math.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
     
-    # def clip_line_to_bbox(self, p1, p2):
-    #     line = LineString([p1, p2])
-    #     clipped_line = line.intersection(self.bbox)
-    #     if isinstance(clipped_line, LineString):
-    #         [p1, p2] = clipped_line.coords[:]
-    #         return [(int(p1[0]), int(p1[1])), (int(p2[0]), int(p2[1])), True]
-    #     return [(int(p1[0]), int(p1[1])), (int(p2[0]), int(p2[1])), False]
 
     def project_point_onto_bbox(self, point):
         x, y = point
@@ -374,8 +418,9 @@ class Path_Finder:
     def find_shortest_path(self, min_distance = 150):
         lines = []
         if not self.paths:
-            print("Error: No path found.")
-            raise("Error: No path found.")
+            pass
+            # print("Error: No path found.")
+            # raise("Error: No path found.")
         for path in self.paths:
             lines.append([LineString(path).length, path])
         lines.sort(key=lambda x: x[0])

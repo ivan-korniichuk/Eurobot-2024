@@ -1,6 +1,6 @@
-from main_robot_navigation.path_finder import Path_Finder
+from navigation.path_finder import Path_Finder
 # import time
-import numpy as np
+# import numpy as np
 import cv2 as cv
 import math
 from shapely.geometry import LineString
@@ -23,10 +23,13 @@ TEAM_BLUE_IDS = range(1,6)
 TEAM_YELLOW_IDS = range(6,11)
 
 class MainNavigation:
-    def __init__(self, offset, team_color, camera_position, height, main_bounding_box, small_bounding_box = (220,220), simas_base = ("ERROR"),
+    def __init__(self, offset, team_color, sima_1_id, sima_2_id, sima_3_id, sima_4_id, camera_position, height, simas_height, main_bbox, 
+                 small_bbox = (220,220), simas_base = ("ERROR"), sima_bbox = ("ERROR"), plant_bbox =("ERROR"),
                 reserved_blue = ("ERROR"), reserved_yellow = ("ERROR")):
-        self.main_bounding_box = main_bounding_box
-        self.robot = []
+        self.main_bounding_box = main_bbox
+        self.small_bbox = small_bbox
+        self.sima_bbox = sima_bbox
+        self.plant_bbox = plant_bbox
         self.contours = []
         self.our_base = []
         self.their_base = []
@@ -35,6 +38,19 @@ class MainNavigation:
         self.their_ids = -1
         self.camera_position = camera_position
         self.height = height
+        self.simas_height = simas_height
+        self.sima_1_id = sima_1_id
+        self.sima_2_id = sima_2_id
+        self.sima_3_id = sima_3_id
+        self.sima_4_id = sima_4_id
+        # [[x,y], rot]
+        self.robot = [] 
+        self.sima_1 = [] 
+        self.sima_2 = [] 
+        self.sima_3 = [] 
+        self.sima_4 = [] 
+        # self.simas_ids = [0,0,0,0]
+        # self.simas = [[], [], [], []]
 
         if team_color == "Yellow":
             self.our_base = reserved_yellow
@@ -53,8 +69,8 @@ class MainNavigation:
         their_base = [self.their_base[0], (self.their_base[0][0], self.their_base[1][1]),
                        self.their_base[1], (self.their_base[1][0], self.their_base[0][1])]
 
-        self.def_contours = [self.add_bounding_box(self.simas_base, small_bounding_box, offset), 
-                             self.add_bounding_box(their_base, small_bounding_box, offset)]
+        self.def_contours = [self.add_bounding_box(self.simas_base, small_bbox, offset), 
+                             self.add_bounding_box(their_base, small_bbox, offset)]
         self.path_finder = Path_Finder(offset, [], h_w=(2000,3000))
 
     def add_bounding_box(self, box, bbox, offset = (0,0)):
@@ -63,6 +79,20 @@ class MainNavigation:
         box[2] = (box[2][0] + bbox[0] + offset[0], box[2][1] + bbox[1] + offset[1])
         box[3] = (box[3][0] + bbox[0] + offset[0], box[2][1] - bbox[1] + offset[1])
         return box
+    
+    def create_bounding_box(self, point, bbox):
+        if point and bbox:
+            contours = [0]*4
+            contours[0] = (point[0] - bbox[0], point[1] - bbox[1])
+            contours[1] = (point[0] + bbox[0], point[1] - bbox[1])
+            contours[2] = (point[0] + bbox[0], point[1] + bbox[1])
+            contours[3] = (point[0] - bbox[0], point[1] + bbox[1])
+            return contours
+        else:
+            return []
+        
+    def unite_bboxes(self, bbox1, bbox2):
+        return [bbox1[0] + bbox2[0], bbox1[1]+ bbox2[1]]
 
     def navigate(self, img, end):
         self.update_obstacles(img, [])
@@ -72,80 +102,74 @@ class MainNavigation:
         if self.robot != []:
             self.path_finder.find_path(self.robot[0], end)
             path = self.path_finder.find_shortest_path()
-        return [self.robot[1], path]
+            return [self.robot[1], path]
+        return []
     
     
     def update_obstacles(self, img, contours):
-        _, other_robot_contours = self.detect_robots(img)
+        _, other_robot = self.detect_robots(img)
+        other_robot_contours = self.create_bounding_box(other_robot, self.main_bounding_box)
         if other_robot_contours:
             contours.append(other_robot_contours)
+        # do this in init
         contours += self.def_contours
-        print(contours)
         self.contours = contours
         return contours
     
-    def camera_compensation(self, position):
+    def set_if_exists(self, object, index):
+        if object and object[index]:
+            return object[index]
+        else:
+            return []
+        
+    def append_if_exists(self, list, object):
+        if object:
+            list.append(object)
+    
+    def camera_compensation(self, position, height):
         line = LineString([position, self.camera_position[:2]])
-        not_known = self.height * line.length / self.camera_position[2]
+        not_known = height * line.length / self.camera_position[2]
         actual_pos = line.interpolate(not_known)
         x, y = int(actual_pos.x), int(actual_pos.y)
         return [x,y]
     
     def detect_robots(self, img):
-        their_robot_corners = []
+        their_robot = []
         out_robot = []
         gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
         blurred = cv.GaussianBlur(gray, (9, 9), 0)
         contrast_enhanced = cv.equalizeHist(blurred)
         clahe = cv.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
         clahe_applied = clahe.apply(contrast_enhanced)
-        # cv.imshow("k", clahe_applied)
         corners, ids, _ = MARKER_DETECTOR.detectMarkers(clahe_applied)
         if len(corners) != 0:
             for (corner, id) in zip(corners, ids):
-                if not (id in self.our_ids or id in self.their_ids):
+                if not (id in self.our_ids or id in self.their_ids or 
+                        id in [self.sima_1_id, self.sima_2_id, self.sima_3_id, self.sima_4_id]):
                     continue
                 tl, _, br, bl  = corner.reshape((4, 2))
                 cX = int((tl[0] + br[0]) / 2.0)
                 cY = int((tl[1] + br[1]) / 2.0)
 
-                cX, cY = self.camera_compensation((cX, cY))
+                vector = (tl-bl)
+                rot = math.atan2(vector[1],vector[0])
+                
+                if id in self.our_ids or id in self.their_ids:
+                    cX, cY = self.camera_compensation((cX, cY), self.height)
+                else: 
+                    cX, cY = self.camera_compensation((cX, cY), self.simas_height)
 
                 if id in self.their_ids:
-                    their_robot_corners = [0]*4
-                    their_robot_corners[0] = (cX - self.main_bounding_box[0], cY - self.main_bounding_box[1])
-                    their_robot_corners[1] = (cX + self.main_bounding_box[0], cY - self.main_bounding_box[1])
-                    their_robot_corners[2] = (cX + self.main_bounding_box[0], cY + self.main_bounding_box[1])
-                    their_robot_corners[3] = (cX - self.main_bounding_box[0], cY + self.main_bounding_box[1])
+                    their_robot = (cX,cY)
                 elif id in self.our_ids:
-                    vector = (tl-bl)
-                    rot = math.atan2(vector[1],vector[0])
                     out_robot = [(cX, cY), rot]
                     self.robot = out_robot
-        return out_robot, their_robot_corners
-    
-    def get_robot(self, img):
-        out_robot = []
-        gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-        blurred = cv.GaussianBlur(gray, (9, 9), 0)
-        contrast_enhanced = cv.equalizeHist(blurred)
-        clahe = cv.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-        clahe_applied = clahe.apply(contrast_enhanced)
-        corners, ids, _ = MARKER_DETECTOR.detectMarkers(clahe_applied)
-        if len(corners) != 0:
-            for (corner, id) in zip(corners, ids):
-                if not (id in self.our_ids):
-                    continue
-                tl, _, br, bl  = corner.reshape((4, 2))
-                cX = int((tl[0] + br[0]) / 2.0)
-                cY = int((tl[1] + br[1]) / 2.0)
-
-                cX, cY = self.camera_compensation((cX, cY))
-
-                if id in self.our_ids:
-                    vector = (tl-bl)
-                    rot = math.atan2(vector[1],vector[0])
-                    out_robot = [(cX, cY), rot]
-                    self.robot = out_robot
-                    return out_robot
-        return []
+                elif id == self.sima_1_id:
+                    self.sima_1 = [(cX, cY), rot]
+                elif id == self.sima_2_id:
+                    self.sima_2 = [(cX, cY), rot]
+                elif id == self.sima_3_id:
+                    self.sima_3 = [(cX, cY), rot]
+                elif id == self.sima_4_id:
+                    self.sima_4 = [(cX, cY), rot]
+        return out_robot, their_robot

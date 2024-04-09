@@ -39,9 +39,9 @@ class Visualiser:
             thickness=5,
         )
 
-    def draw_path(self, path):
+    def draw_path(self, path, colour = (255, 0, 0)):
         for i in range(len(path) - 1):
-            cv.line(self.view, list(path[i]), list(path[i + 1]), (255, 0, 0), 3)
+            cv.line(self.view, list(path[i]), list(path[i + 1]), colour, 7)
         return
 
     # # delete, move to data_analyser
@@ -67,7 +67,7 @@ class Visualiser:
         self.draw_rectangle(self.sima_area_y, YELLOW)
 
 
-    def update(self, img, plants, path):
+    def update(self, img, plants, path, simas_paths):
         self.view = img
         if plants:
             non_assigned_plants, b_mid_plants, y_mid_plants, b_corner_plants, y_corner_plants, b_reserved_plants, y_reserved_plants = plants
@@ -87,5 +87,9 @@ class Visualiser:
             for plant in y_reserved_plants:
                 self.draw_plant(plant, RED)
         self.draw_path(path)
-        self.view
+        i = 0
+        for path in simas_paths:
+            i += 1
+            self.draw_path(path, (50 + 40*i, 180, 240/i))
+        # self.view
         return self.view

@@ -8,7 +8,7 @@ class DataAnaliser:
         self.b_reserved = self.apply_offset(b_reserved)
         self.y_reserved = self.apply_offset(y_reserved)
         self.default_solar_pos = [0]*9
-        self.plants = [0]*7
+        self.plants = [[]*7]
 
     def apply_offset(self, corners):
         updated_corners = []

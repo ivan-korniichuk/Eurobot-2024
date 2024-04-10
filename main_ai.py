@@ -94,7 +94,8 @@ class MainAI:
         pass
 
     def simaMovement(self, simaNum):
-        simaComs = serial.Serial("/dev/", 115200)  # TODO: Use correct port
+        simaComs = serial.Serial(f"/dev/tty.SLAB_USBtoUART{simaNum*2 if simaNum != 1 else ''}", 115200)
+        # TODO: Hardcode SIMA Mac Address
         oldPoint = (-1, -1)
 
         while True:
